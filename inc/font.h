@@ -4,7 +4,7 @@
 #include <stb_truetype.h>
 
 // Forward Declarations:
-class Material;
+struct Material;
 struct Vector3;
 struct Vector2;
 struct Mesh;
@@ -27,28 +27,8 @@ typedef struct Font {
 	uint16_t AtlasSize = 0;
 	float FontSize = 0.0f;
 
-	inline Font(Material* material, uint16_t charactersToLoad, uint16_t atlasSize) : material(material), CharactersLoaded(charactersToLoad), AtlasSize(atlasSize){
-		textureAtlas = new Texture();
-		textureAtlas->width = AtlasSize;
-		textureAtlas->height = AtlasSize;
-		textureAtlas->channels = 1;
-		textureAtlas->filterType = GL_NEAREST;
-		fontAtlasTextureData = new uint8_t[atlasSize * atlasSize];
-		packedChars = new stbtt_packedchar[CharactersLoaded];
-		alignedQuads = new stbtt_aligned_quad[CharactersLoaded];
-	}
-
-	inline ~Font() {
-
-		//assert(references == 0);
-
-		delete[] fontAtlasTextureData;
-		delete[] packedChars;
-		delete[] alignedQuads;
-		fontAtlasTextureData = nullptr;
-		packedChars = nullptr;
-		alignedQuads = nullptr;
-	}
+	Font(Material* material, uint16_t charactersToLoad, uint16_t atlasSize);
+	~Font();
 
 } Font;
 
@@ -74,7 +54,7 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
 static void DeleteFont(const char* alias);
 
 void DereferenceFonts();
-void DrawTextMesh(TextRender* textRender, Camera* camera, const double aspectRatio);
+void DrawTextMesh(const TextRender* textRender, const Camera* camera, const double aspectRatio, const GLfloat time);
 
 void SetFont(TextRender* textRender, const char* fontName, Font* defaultFont = nullptr);
 void SetText(TextRender* textRender, const char* string, int x, int y, const float windowWidth, const float windowHeight, const float size);

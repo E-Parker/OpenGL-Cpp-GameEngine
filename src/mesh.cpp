@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "material.h"
+#include "renderable.h"
 #include "par_shapes.h"
 
 const uint16_t LINE_BUFFER_SIZE = 512;
@@ -34,13 +35,12 @@ StaticMesh::~StaticMesh() {
     // There is currently a memory leak caused by not deleting the materials.
     
     // Free the first mesh the normal way, since it contains the original reference to the vbo, tbo, and nbo.
-    InternalFreeMesh(&meshRenders[0]);
+    FreeMesh(&meshRenders[0]);
 
     // Delete all other meshes with the subMesh method to avoid freeing the same location twice.
     for (int i = 1; i < MaterialCount; i++) {
-        InternalFreeSubMesh(&meshRenders[i]);
-    
-}
+        FreeSubMesh(&meshRenders[i]);
+    }
     
     delete[] materials;
     materials = nullptr;
@@ -58,143 +58,9 @@ void StaticMesh::SetMaterial(Material* material, uint16_t index) {
     materials[index] = material;
 }
 
-void InternalFreeSubMesh(Mesh* mesh) {
-    /* Use this to free a mesh that was created by copying from another. */
-    
-    if (mesh->ElementBufferObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->ElementBufferObject));
-        mesh->ElementBufferObject = GL_NONE;
-    }
 
-    if (mesh->VertexAttributeObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->VertexAttributeObject));
-        mesh->VertexAttributeObject = GL_NONE;
-    }
 
-}
-
-void InternalFreeMesh(Mesh* mesh) {
-
-    if (mesh->ElementBufferObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->ElementBufferObject));
-        mesh->ElementBufferObject = GL_NONE;
-    }
-
-    if (mesh->TextureCoordBufferObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->TextureCoordBufferObject));
-        mesh->TextureCoordBufferObject = GL_NONE;
-    }
-
-    if (mesh->NormalBufferObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->NormalBufferObject));
-        mesh->NormalBufferObject = GL_NONE;
-    }
-
-    if (mesh->VertexBufferObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->VertexBufferObject));
-        mesh->VertexBufferObject = GL_NONE;
-    }
-
-    if (mesh->VertexAttributeObject != GL_NONE) {
-        glDeleteBuffers(1, &(mesh->VertexAttributeObject));
-        mesh->VertexAttributeObject = GL_NONE;
-    }
-}
-
-void InternalUploadMesh(Mesh* mesh, Mesh* source, const uint16_t* indeciesArray, const uint16_t indecies){
-    /* variant of UploadMesh for meshes that share vertices but have a different element buffer. */
-    
-    size_t indexBytes = indecies * sizeof(uint16_t);
-    mesh->indexBytes = indexBytes;
-
-    if (mesh->VertexAttributeObject == GL_NONE) { 
-        glGenVertexArrays(1, &(mesh->VertexAttributeObject));
-    }
-    glBindVertexArray(mesh->VertexAttributeObject);
-
-    mesh->VertexBufferObject = source->VertexBufferObject;
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->VertexBufferObject);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
-    glEnableVertexAttribArray(0);
-
-    mesh->NormalBufferObject = source->NormalBufferObject;
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->NormalBufferObject);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
-    glEnableVertexAttribArray(1);
-       
-    mesh->TextureCoordBufferObject = source->TextureCoordBufferObject;
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->TextureCoordBufferObject);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), nullptr);
-    glEnableVertexAttribArray(2);
-
-    if (mesh->ElementBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->ElementBufferObject)); }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ElementBufferObject);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBytes, indeciesArray, GL_STATIC_DRAW);
-
-    glBindVertexArray(GL_NONE);
-    glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE);
-
-}
-
-void InternalUploadMesh(Mesh* mesh, const  uint16_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
-    /* Uploading mesh to GPU. points and normalBuffer must exist for the upload to work. 
-    tCoord data and face data is optional. */
-
-    size_t vertexBytes = vertecies * sizeof(Vector3);
-    size_t tCoordBytes = vertecies * sizeof(Vector2);
-    size_t indexBytes = indecies * sizeof(uint16_t);
-    size_t normalBytes = vertexBytes;
-
-    mesh->indexBytes = indexBytes;
-
-    // Create a Vertex Attribute Object. This is kind of like a container for the buffer objects.              
-    if (mesh->VertexAttributeObject == GL_NONE) { glGenVertexArrays(1, &(mesh->VertexAttributeObject)); }
-    glBindVertexArray(mesh->VertexAttributeObject);
-    
-    // This buffer is bound to the 0th attribute, it stores the points of the mesh.
-    if (mesh->VertexBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->VertexBufferObject)); }
-    glBindBuffer(GL_ARRAY_BUFFER, (mesh->VertexBufferObject));
-    glBufferData(GL_ARRAY_BUFFER, vertexBytes, vertexBufferArray, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
-    glEnableVertexAttribArray(0);
-
-    // This buffer is bound to the 1st Attribute, it stores the normal vectors for each point.
-    if (mesh->NormalBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->NormalBufferObject)); }
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->NormalBufferObject);
-    glBufferData(GL_ARRAY_BUFFER, normalBytes, normalBufferArray, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
-    glEnableVertexAttribArray(1);
-
-    // First we check if the mesh has texture coordinates, then we add a buffer and assign it.
-    if (tCoordArray != nullptr) {
-        if (mesh->TextureCoordBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->TextureCoordBufferObject)); }
-        glBindBuffer(GL_ARRAY_BUFFER, mesh->TextureCoordBufferObject);
-        glBufferData(GL_ARRAY_BUFFER, tCoordBytes, tCoordArray, GL_STATIC_DRAW);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), nullptr);
-        glEnableVertexAttribArray(2);
-    }
-    else {
-        std::cout << "Warning: mesh does not have texture coordinates." << std::endl;
-    }
-
-    // First check if there are face indicies, then make an element array for them.
-    if (indeciesArray != nullptr) {
-        if(mesh->ElementBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->ElementBufferObject)); }
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ElementBufferObject);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBytes, indeciesArray, GL_STATIC_DRAW);
-    }
-    else {
-        std::cout << "Warning: faces not provided, using naive method." << std::endl;
-    }
-
-    glBindVertexArray(GL_NONE);
-    glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE);
-
-}
-
-void StaticMesh::Draw(Camera* camera) const {
+void StaticMesh::Draw(Camera* camera, GLfloat time) const {
     /* function to draw a mesh on screen. */
 
     if (this == nullptr) {
@@ -205,26 +71,8 @@ void StaticMesh::Draw(Camera* camera) const {
 
     // run a draw call for each material.
     for (uint16_t i = 0; i < MaterialCount; i++) {
-         
-        // ensure the current material is valid.
-        if (materials[i] == nullptr) {
-            continue;
-        }
-            
-        // Bind the material's shader program and textures.
-        materials[i]->BindMaterial();
-
-        // Get the uniform from the shader.
-        GLint uniform = glGetUniformLocation(materials[i]->Program, "u_mvp");
-
-        // Bind the VAO and draw the elements.
-        glBindVertexArray(meshRenders[i].VertexAttributeObject);
-        glUniformMatrix4fv(uniform, 1, GL_FALSE, ToFloat16(mvp).v);
-        glDrawElements(GL_TRIANGLES, meshRenders[i].indexBytes, GL_UNSIGNED_SHORT, 0);
-        
+        DrawRenderable(&meshRenders[i], materials[i], &mvp, time);
     }
-    // unbind the VAO.
-    glBindVertexArray(GL_NONE);
 }
 
 Vector2 Vector2FromString(const std::string data) {
@@ -442,7 +290,7 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
     SetAlias(newMesh, ObjectName.c_str());
 
     // upload the first mesh containing the actual vertex, normal and tChoord buffers. 
-    InternalUploadMesh(&(newMesh->meshRenders[0]), &vi[0], &vertexList[0], &normalArray[0], &tCoordArray[0], surfaceSplitIndecies[0], vertexList.size());
+    UploadMesh(&(newMesh->meshRenders[0]), &vi[0], &vertexList[0], &normalArray[0], &tCoordArray[0], surfaceSplitIndecies[0], vertexList.size());
     
     //starting at the first material split, upload a sub-mesh referencing the buffers from the first mesh.
     uint16_t currentMaterialElementIndex = 0;
@@ -450,7 +298,7 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
     for (uint16_t i = 1; i < materialCount; i++) {
         // Copy the vbo, tbo, and nbo from the first mesh which holds all the data.
         currentMaterialElementIndex += surfaceSplitIndecies[i];
-        InternalUploadMesh(&newMesh->meshRenders[i], &newMesh->meshRenders[0], &vi[currentMaterialElementIndex], surfaceSplitIndecies[i]);
+        UploadSubMesh(&newMesh->meshRenders[i], &newMesh->meshRenders[0], &vi[currentMaterialElementIndex], surfaceSplitIndecies[i]);
     }
 	return newMesh;
 }
@@ -463,7 +311,7 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
 
 StaticMesh* CreateStaticMeshFromRawData(const uint16_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const  Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
-    InternalUploadMesh(&(newMesh->meshRenders[0]), indeciesArray, vertexBufferArray, normalBufferArray, tCoordArray, indecies, vertecies);
+    UploadMesh(&(newMesh->meshRenders[0]), indeciesArray, vertexBufferArray, normalBufferArray, tCoordArray, indecies, vertecies);
     return newMesh;
 }
 
@@ -471,7 +319,7 @@ StaticMesh* CreateStaticMeshFromRawData(const uint16_t* indeciesArray, const  Ve
 StaticMesh* CreateStaticMeshPrimativeCone(int slices, int stacks) {
     par_shapes_mesh* parMesh = par_shapes_create_cone(slices, stacks);
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
-    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
+    UploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
     par_shapes_free_mesh(parMesh);
     return newMesh;
 }
@@ -480,7 +328,7 @@ StaticMesh* CreateStaticMeshPrimativeCone(int slices, int stacks) {
 StaticMesh* CreateStaticMeshPrimativeCylinder(int slices, int stacks) {
     par_shapes_mesh* parMesh = par_shapes_create_cylinder(slices, stacks);
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
-    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
+    UploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
     par_shapes_free_mesh(parMesh);
     return newMesh;
 }
@@ -489,7 +337,7 @@ StaticMesh* CreateStaticMeshPrimativeCylinder(int slices, int stacks) {
 StaticMesh* CreateStaticMeshPrimativeTorus(int slices, int stacks, float radius) {
     par_shapes_mesh* parMesh = par_shapes_create_torus(slices, stacks, radius);
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
-    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
+    UploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
     par_shapes_free_mesh(parMesh);
     return newMesh;
 }
@@ -498,7 +346,7 @@ StaticMesh* CreateStaticMeshPrimativeTorus(int slices, int stacks, float radius)
 StaticMesh* CreateStaticMeshPrimativePlane(int slices, int stacks) {
     par_shapes_mesh* parMesh = par_shapes_create_plane(slices, stacks);
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
-    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
+    UploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
     par_shapes_free_mesh(parMesh);
     return newMesh;
 }
@@ -508,7 +356,7 @@ StaticMesh* CreateStaticMeshPrimativeSphere(int subdivisions) {
     par_shapes_mesh* parMesh = par_shapes_create_subdivided_sphere(subdivisions);
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
     Vector2* tCoord = new Vector2[parMesh->npoints]{ {0.0f, 0.0f} };
-    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, tCoord, parMesh->ntriangles * 3, parMesh->npoints);
+    UploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, tCoord, parMesh->ntriangles * 3, parMesh->npoints);
     par_shapes_free_mesh(parMesh);
     delete[] tCoord;
     return newMesh;

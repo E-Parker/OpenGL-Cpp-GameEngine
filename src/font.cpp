@@ -11,19 +11,46 @@
 
 #include "vectorMath.h"
 #include "hashTable.h"
-#include "material.h"
 #include "camera.h"
+#include "material.h"
+#include "texture.h"
 #include "font.h"
 #include "mesh.h"
+#include "renderable.h"
 
-// Generate truetype body here since it's only needed here.
+// Generate stb_trueType body here since it's only needed here.
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
 
-static HashTable<Font> FontTable(512);
+static HashTable<Font> FontTable(64);
 
 #define DEFAULT_START_CHARACTER 31
+
+
+Font::Font(Material* material, uint16_t charactersToLoad, uint16_t atlasSize) : material(material), CharactersLoaded(charactersToLoad), AtlasSize(atlasSize) {
+    textureAtlas = new Texture();
+    textureAtlas->width = AtlasSize;
+    textureAtlas->height = AtlasSize;
+    textureAtlas->channels = 1;
+    textureAtlas->filterType = GL_NEAREST;
+    fontAtlasTextureData = new uint8_t[atlasSize * atlasSize];
+    packedChars = new stbtt_packedchar[CharactersLoaded];
+    alignedQuads = new stbtt_aligned_quad[CharactersLoaded];
+}
+
+Font::~Font() {
+
+    //assert(references == 0);
+
+    delete[] fontAtlasTextureData;
+    delete[] packedChars;
+    delete[] alignedQuads;
+    fontAtlasTextureData = nullptr;
+    packedChars = nullptr;
+    alignedQuads = nullptr;
+}
+
 
 Font* FontManager::InternalLoadFont(const char* path, Material* material, const float pointSize = 12.0f) {
     
@@ -58,7 +85,7 @@ Font* FontManager::InternalLoadFont(const char* path, Material* material, const 
     uint32_t atlasSize = Pow2Ceiling((uint32_t)(pointSize * sqrt((double)(fontInfo.numGlyphs))));
 
     Font* font = new Font(material, fontInfo.numGlyphs, atlasSize);
-    font->FontSize = pointSize + 3.0f;  // I don't know why but +3.0f makes it work. :/
+    font->FontSize = pointSize;
 
     // Tell stb_trueType the parameters for packing the incoming font.
     stbtt_pack_context packContext;
@@ -89,7 +116,7 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
 
     font = FontManager::InternalLoadFont(path, material, pointSize);
     TextureManager::InternalCreateTexture(font->textureAtlas, false, alias, GL_RED, GL_RED, font->fontAtlasTextureData, false);
-    material->SetTexture(font->textureAtlas, 0);
+    SetTextureFromPointer(material, font->textureAtlas, 0);
 
     if (font == nullptr) {
         std::cout << "Error creating Font: \"" << alias << "\" From: \"" << path << "\". The Font will be discarded." << std::endl;
@@ -158,12 +185,12 @@ TextRender::~TextRender() {
         return;
     }
 
-    InternalFreeMesh(textMesh);
+    FreeMesh(textMesh);
     delete textMesh;
     textMesh = nullptr;
 }
 
-void DrawTextMesh(TextRender* textRender, Camera* camera, double aspectRatio) {
+void DrawTextMesh(const TextRender* textRender, const Camera* camera, const double aspectRatio, const GLfloat time) {
     /* Draw text to the screen. */
 
     // if the textRender is invalid, leave early without drawing anything.
@@ -179,20 +206,8 @@ void DrawTextMesh(TextRender* textRender, Camera* camera, double aspectRatio) {
 
     // Calculate the projection. in this case its just an Orthographic projection to show up in screen-space.
     Matrix mvp = MatrixIdentity() * Ortho(-aspectRatio, aspectRatio, -1.0, 1.0, 1.0, -1.0);
+    DrawRenderable(textRender->textMesh, textRender->font->material, &mvp, time);
 
-
-    textRender->font->material->BindMaterial();
-    GLint uniform = glGetUniformLocation(textRender->font->material->Program, "u_mvp");
-    GLint color = glGetUniformLocation(textRender->font->material->Program, "u_color");
-    
-    // Bind the VAO and draw the elements.
-    glBindVertexArray(textRender->textMesh->VertexAttributeObject);
-    glUniformMatrix4fv(uniform, 1, GL_FALSE, ToFloat16(mvp).v);
-    glUniform3f(color, textRender->color[0], textRender->color[1], textRender->color[2]);
-    glDrawElements(GL_TRIANGLES, textRender->textMesh->indexBytes, GL_UNSIGNED_SHORT, 0);
-
-    // unbind the VAO.
-    glBindVertexArray(GL_NONE);
 }
 
 void SetText(TextRender* textRender, const char* string, int x, int y, const float windowWidth, const float windowHeight, const float size) {
@@ -320,7 +335,7 @@ void SetText(TextRender* textRender, const char* string, int x, int y, const flo
     }
     
     // Upload the mesh.
-    InternalUploadMesh(textRender->textMesh, elements, vertices, normals, tChoords, ElementBufferSize, VertexBufferSize);
+    UploadMesh(textRender->textMesh, elements, vertices, normals, tChoords, ElementBufferSize, VertexBufferSize);
     
     // clean up arrays.
     delete[] vertices;
@@ -360,3 +375,4 @@ void SetFont(TextRender* textRender, const char* fontName, Font* defaultFont) {
     std::cout << "no default font provided, text will not render." << std::endl;
 
 }
+

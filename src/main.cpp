@@ -10,12 +10,11 @@
 
 #include "glUtilities.h"
 #include "vectorMath.h"
-#include "createShader.h"
+#include "texture.h"
 #include "material.h"
 #include "camera.h"
 #include "mesh.h"
 #include "font.h"
-#include "asset.h"
 
 constexpr int SCREEN_WIDTH = 640;
 constexpr int SCREEN_HEIGHT = 480;
@@ -42,10 +41,10 @@ int main(void) {
     Material* Mat0 = new Material("./assets/shaders/default.vert", "./assets/shaders/ditheredAlpha.frag", 1, GL_BACK, GL_LESS);
     
     // Set Material Textures:
-    Mat0->SetTexture("MissingTexture", 0);
+    SetTextureFromAlias(Mat0, "MissingTexture", 0);
     
     // Load Font:
-    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 11.0f);
+    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 14.0f);
     
     // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
     TextRender* testText = new TextRender();
@@ -79,12 +78,13 @@ int main(void) {
         if (IsKeyPressed(GLFW_KEY_LEFT)) {
             x--;
         }
+
         mainCamera->Update(mainCamera, DeltaTime(), AspectRatio());
      
-        mesh->Draw(mainCamera);
+        mesh->Draw(mainCamera, (GLfloat)Time());
        
-        SetText(testText, "AThis is a test. \nAof a really long string", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 4.0f);
-        DrawTextMesh(testText, mainCamera, AspectRatio());
+        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 1.0f);
+        DrawTextMesh(testText, mainCamera, AspectRatio(), (GLfloat)Time());
         
         
         /* Swap front and back buffers */

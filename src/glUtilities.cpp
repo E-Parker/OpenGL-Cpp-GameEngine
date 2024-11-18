@@ -9,6 +9,10 @@
 
 #include "glUtilities.h"
 
+double Time() {
+    return internalInstanceInfo.time;
+}
+
 double DeltaTime() {
     return internalInstanceInfo.deltaTime;
 }

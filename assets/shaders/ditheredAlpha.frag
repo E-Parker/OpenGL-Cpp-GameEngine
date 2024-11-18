@@ -4,39 +4,17 @@ out vec4 FragColor;
 in vec3 position;
 in vec3 normal;
 in vec2 tcoord;
+in float time;
 
 uniform sampler2D albedo;
 
-bool ditherValue(float brightness, vec2 pos) {
-    
-    // do the simple math first
-    if (brightness > 16.0/17.0) return false;
-    if (brightness < 01.0/17.0) return true;
-    
-    vec2 pixel = floor(mod((pos.xy+0.5), 4.0));
-    int x = int(pixel.x);
-    int y = int(pixel.y);
-    bool result = false;
-    
-    // compute the 16 values by hand, store when it's a match
-    	 if (x == 0 && y == 0) result = brightness < 16.0/17.0;
-   	else if (x == 2 && y == 2) result = brightness < 15.0/17.0;
-   	else if (x == 2 && y == 0) result = brightness < 14.0/17.0;
-   	else if (x == 0 && y == 2) result = brightness < 13.0/17.0;
-   	else if (x == 1 && y == 1) result = brightness < 12.0/17.0;
-   	else if (x == 3 && y == 3) result = brightness < 11.0/17.0;
-   	else if (x == 3 && y == 1) result = brightness < 10.0/17.0;
-   	else if (x == 1 && y == 3) result = brightness < 09.0/17.0;
-   	else if (x == 1 && y == 0) result = brightness < 08.0/17.0;
-   	else if (x == 3 && y == 2) result = brightness < 07.0/17.0;
-   	else if (x == 3 && y == 0) result = brightness < 06.0/17.0;
-    else if (x == 0 && y == 1) result =	brightness < 05.0/17.0;
-   	else if (x == 1 && y == 2) result = brightness < 04.0/17.0;
-   	else if (x == 2 && y == 3) result = brightness < 03.0/17.0;
-   	else if (x == 2 && y == 1) result = brightness < 02.0/17.0;
-   	else if (x == 0 && y == 3) result = brightness < 01.0/17.0;
-        
-	return result;
+vec3 hash32(vec2 p) {
+	vec3 p3 = vec3(p.xyx) * vec3(443.8975, 397.2973, 491.1871);
+	p3 = p3 - floor(p3);
+    p3 += dot(p3, p3.yxz + 19.19);
+	vec3 r3 = vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x);
+	r3 = r3 - floor(r3);
+	return r3;
 }
 
 void main() {
@@ -46,7 +24,9 @@ void main() {
     float scaledDepth = (4.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.far - gl_DepthRange.near);
 	float clipDepth = scaledDepth / gl_FragCoord.w;
     
-    if(ditherValue(clipDepth, gl_FragCoord.xy)) {
+	vec3 rand_v3 = hash32(gl_FragCoord.xy);
+    
+    if(clipDepth < rand_v3.r || color.a < rand_v3.r) {
         discard;
     }
 

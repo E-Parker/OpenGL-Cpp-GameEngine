@@ -86,13 +86,13 @@ template<typename T> class HashTable {
 
 public:
 
-    inline HashTable(uint64_t size) {
-        Size = (size < 32) ? 32 : Pow2Ceiling<uint64_t>(size);
+    HashTable(uint64_t size) {
+        Size = (size < 16) ? 16 : Pow2Ceiling<uint64_t>(size);
         Array = new HashTable<T>::HashTableItem[Size];
         SlotsUsed = 0;
     }
 
-    inline ~HashTable() {
+    ~HashTable() {
 
         for (uint64_t i = 0; i < Size; i++) {
             
@@ -111,7 +111,33 @@ public:
         Array = nullptr;
     }
 
-    inline bool Find(const char* key, T*& outValue) {
+    bool Replace(const char* key, T* Value) {
+
+        char* keyEnd = FindBufferEnd(key);
+
+        // Generate the hash for the string.
+        uint64_t hash = fnvHash64(key, keyEnd) % Size;
+        uint64_t originalHash = hash;
+
+        while (Array[hash].Key != nullptr) {
+
+            if (HashTable::CompareKeys(&Array[hash], key, keyEnd)) {
+                delete Array[hash].Value;
+                Array[hash].Value = Value;
+                return true;
+            }
+
+            hash++;
+            hash %= Size;
+
+            if (originalHash == hash) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    bool Find(const char* key, T*& outValue) {
 
         char* keyEnd = FindBufferEnd(key);
 
@@ -136,7 +162,7 @@ public:
         return false;
     }
 
-    inline bool Delete(const char* key) {
+    bool Delete(const char* key) {
 
         char* keyEnd = FindBufferEnd(key);
 
@@ -173,7 +199,7 @@ public:
         return false;
     }
 
-    inline char* Insert(const char* key, T* value, bool isManaged = false) {
+    char* Insert(const char* key, T* value, bool isManaged = false) {
         /* Insert an item into the table, returns a pointer to the key. 
        
         The is managed value requires some explanation. This flag controls if the
@@ -221,7 +247,7 @@ public:
         return Array[hash].Key;
     }
 
-    inline void Expand() {
+    void Expand() {
         /* This function is insanely expensive. Since the hashes are determined by the initial size,
         everything needs to be recalculated. the size is set to the next nearest power of two to ensure
         this doesn't happen often. */
@@ -261,7 +287,7 @@ public:
         Size = newSize;
     }
 
-    inline bool CompareKeys(const HashTableItem* item, const char* key, const char* keyEnd) {
+    bool CompareKeys(const HashTableItem* item, const char* key, const char* keyEnd) {
         /* Basically the same as strcmp, the length check might be slightly faster. */ 
 
         // Leave early if the keys don't have the same length.

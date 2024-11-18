@@ -55,6 +55,7 @@ void SetCaptureCursor(const bool captureCursor);
 void GetCursorPositionDelta(double* xPos, double* yPos);
 void GetCursorPosition(double* xPos, double* yPos);
 
+double Time();
 double DeltaTime();
 double AspectRatio();
 int WindowHeight();
