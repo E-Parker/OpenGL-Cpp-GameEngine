@@ -83,7 +83,7 @@ int main(void) {
      
         mesh->Draw(mainCamera);
        
-        SetText(testText, "AThis is a test. \nAof a really long string", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 2.0f);
+        SetText(testText, "AThis is a test. \nAof a really long string", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 4.0f);
         DrawTextMesh(testText, mainCamera, AspectRatio());
         
         

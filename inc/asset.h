@@ -26,6 +26,7 @@ typedef struct min_asset {
 
 } min_asset;
 
+
 typedef struct asset {
     // Holds basic information that all objects in a scene will have. Instead of using inheritance & polymorphism, which has some 
     // overhead, pass objects as void* then static cast to the actual type. This has some advantages in that any generic operation, 
@@ -57,6 +58,7 @@ namespace ObjectType {
     const uint8_t Text          = 0x04;
     const uint8_t Camera        = 0x05;
 }
+
 
 inline void SetAlias(void* gameObject, const char* string) {
     /* copy the string into the gameObject alias buffer. */

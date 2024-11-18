@@ -22,10 +22,10 @@
     <ClCompile Include="D:\GitHub\Graphics\src\mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\GitHub\Graphics\src\par_shapes.cpp">
+    <ClCompile Include="D:\GitHub\Graphics\src\par_shapes.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\GitHub\Graphics\src\stb_image.cpp">
+    <ClCompile Include="D:\GitHub\Graphics\src\stb_image.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,13 +42,13 @@
     <ClInclude Include="D:\GitHub\Graphics\inc\KHR\khrplatform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="D:\GitHub\Graphics\inc\asset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="D:\GitHub\Graphics\inc\camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="D:\GitHub\Graphics\inc\font.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\asset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="D:\GitHub\Graphics\inc\glUtilities.h">

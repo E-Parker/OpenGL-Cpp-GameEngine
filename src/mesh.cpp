@@ -455,6 +455,11 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
 	return newMesh;
 }
 
+//par_shapes_mesh* tmp = parMesh;
+//parMesh = par_shapes_weld(parMesh, 0.01, 0);
+//par_shapes_free_mesh(tmp);
+//par_shapes_compute_normals(parMesh);
+
 
 StaticMesh* CreateStaticMeshFromRawData(const uint16_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const  Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
@@ -502,8 +507,10 @@ StaticMesh* CreateStaticMeshPrimativePlane(int slices, int stacks) {
 StaticMesh* CreateStaticMeshPrimativeSphere(int subdivisions) {
     par_shapes_mesh* parMesh = par_shapes_create_subdivided_sphere(subdivisions);
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
-    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, (Vector2*)parMesh->tcoords, parMesh->ntriangles * 3, parMesh->npoints);
+    Vector2* tCoord = new Vector2[parMesh->npoints]{ {0.0f, 0.0f} };
+    InternalUploadMesh(&(newMesh->meshRenders[0]), parMesh->triangles, (Vector3*)parMesh->points, (Vector3*)parMesh->normals, tCoord, parMesh->ntriangles * 3, parMesh->npoints);
     par_shapes_free_mesh(parMesh);
+    delete[] tCoord;
     return newMesh;
 }
 

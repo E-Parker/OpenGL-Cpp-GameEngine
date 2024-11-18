@@ -311,7 +311,7 @@ void SetText(TextRender* textRender, const char* string, int x, int y, const flo
         memcpy(&normals[vertexIndex], glyphNormals, 4 * sizeof(Vector3));
         memcpy(&tChoords[vertexIndex], glyphTCoords, 4 * sizeof(Vector2));
         memcpy(&elements[elementIndex], glyphElements, 6 * sizeof(uint16_t));
-
+        
         vertexIndex += 4;
         elementIndex += 6;
 
