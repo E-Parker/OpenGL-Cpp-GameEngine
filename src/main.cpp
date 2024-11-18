@@ -1,0 +1,112 @@
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <array>
+
+#include "glUtilities.h"
+#include "vectorMath.h"
+#include "CreateShader.h"
+#include "Material.h"
+#include "Camera.h"
+#include "Mesh.h"
+#include "font.h"
+#include "asset.h"
+
+constexpr int SCREEN_WIDTH = 640;
+constexpr int SCREEN_HEIGHT = 480;
+
+
+int main(void) {
+    
+    // Initialize the window to the starting size and set the header.
+    GLFWwindow* window = Initialize(SCREEN_WIDTH, SCREEN_HEIGHT, "Delta Render");
+    
+    // Add termination functions to be executed at the end of the program.
+    glUtilAddTerminationFunction(DereferenceFonts);
+    glUtilAddTerminationFunction(DereferenceTextures);
+    glUtilAddTerminationFunction(glfwTerminate);
+    
+    // Load Textures:
+    CreateTexture("./assets/defaultAssets/missingTexture.png", "MissingTexture", GL_RGBA, GL_RGBA, false, false, false, GL_LINEAR);
+    CreateTexture("./assets/defaultAssets/ErrorModelTexture.png", "ErrorTexture", GL_RGBA, GL_RGBA, false, false, true, GL_LINEAR);
+
+    // Load Materials:
+    Material* DefaultTextMaterial = new Material("./assets/shaders/defaultText.vert", "./assets/shaders/defaultText.frag", 1, GL_BACK, GL_ALWAYS);
+    Material* NormalMaterial = new Material("./assets/shaders/default.vert", "./assets/shaders/normal_color.frag", 0, GL_BACK, GL_LESS);
+    Material* TChoodColorMaterial = new Material("./assets/shaders/default.vert", "./assets/shaders/tcoord_color.frag", 0, GL_BACK, GL_LESS);
+    Material* Mat0 = new Material("./assets/shaders/default.vert", "./assets/shaders/ditheredAlpha.frag", 1, GL_BACK, GL_LESS);
+    
+    // Set Material Textures:
+    Mat0->SetTexture("MissingTexture", 0);
+    
+    // Load Font:
+    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 11.0f);
+    
+    // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
+    TextRender* testText = new TextRender();
+    SetFont(testText, "DepartureMono", departureMono);
+
+
+    StaticMesh* mesh = CreateStaticMeshPrimativePlane(1, 1);
+    mesh->SetMaterial(Mat0, 0);
+
+
+    Camera* mainCamera = new Camera(NoClipCameraUpdate);
+
+    int x = 0;
+    int y = 0;
+    
+    /* Loop until the user closes the window */
+    while (!glfwWindowShouldClose(window)) {
+        
+        // FRAME STARTS HERE
+        glUtilInitializeFrame(window);
+
+        if (IsKeyPressed(GLFW_KEY_UP)) {
+            y++;
+        }
+        if (IsKeyPressed(GLFW_KEY_DOWN)) {
+            y--;
+        }
+        if (IsKeyPressed(GLFW_KEY_RIGHT)) {
+            x++;
+        }
+        if (IsKeyPressed(GLFW_KEY_LEFT)) {
+            x--;
+        }
+        mainCamera->Update(mainCamera, DeltaTime(), AspectRatio());
+     
+        mesh->Draw(mainCamera);
+       
+        SetText(testText, "AThis is a test. \nAof a really long string", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 2.0f);
+        DrawTextMesh(testText, mainCamera, AspectRatio());
+        
+        
+        /* Swap front and back buffers */
+        glfwSwapBuffers(window);
+
+        /* Poll and process events */
+        glUtilPollEvents();
+        
+    }
+
+    delete mainCamera;
+
+    delete mesh;
+
+    delete DefaultTextMaterial;
+    delete NormalMaterial;
+    delete TChoodColorMaterial;
+    delete Mat0;
+
+    delete testText;
+
+    glUtilTerminate();
+    return 0;
+}
+
