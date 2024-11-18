@@ -9,9 +9,9 @@
 #include <cstring>
 #include <vector>
 
-#include "Camera.h"
-#include "Mesh.h"
-#include "Material.h"
+#include "camera.h"
+#include "mesh.h"
+#include "material.h"
 #include "par_shapes.h"
 
 const uint16_t LINE_BUFFER_SIZE = 512;

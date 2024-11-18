@@ -10,10 +10,10 @@
 
 #include "glUtilities.h"
 #include "vectorMath.h"
-#include "CreateShader.h"
-#include "Material.h"
-#include "Camera.h"
-#include "Mesh.h"
+#include "createShader.h"
+#include "material.h"
+#include "camera.h"
+#include "mesh.h"
 #include "font.h"
 #include "asset.h"
 

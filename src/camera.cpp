@@ -3,7 +3,7 @@
 
 #include "glUtilities.h"
 #include "vectorMath.h"
-#include "Camera.h"
+#include "camera.h"
 
 
 Camera::Camera() {}
