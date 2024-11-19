@@ -12,16 +12,15 @@
 #include "vectorMath.h"
 #include "hashTable.h"
 #include "camera.h"
-#include "material.h"
 #include "texture.h"
-#include "font.h"
+#include "material.h"
 #include "mesh.h"
+#include "font.h"
 #include "renderable.h"
 
 // Generate stb_trueType body here since it's only needed here.
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
-
 
 static HashTable<Font> FontTable(64);
 

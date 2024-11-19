@@ -1,6 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <string>
+#include <iostream>
+
 #include "glUtilities.h"
 #include "vectorMath.h"
 #include "camera.h"
@@ -33,7 +36,6 @@ Camera::Camera(CameraUpdateFunction update, CameraInitializeFunction init, float
 }
 
 Camera::~Camera() {}
-
 
 void DefaultCameraInit(Camera* camera) {
     SetCaptureCursor(true);
@@ -73,7 +75,7 @@ void NoClipCameraUpdate(Camera* camera, const double deltaTime, const double rat
     if(IsKeyDown(GLFW_KEY_LEFT_SHIFT)) {
         desiredMovement += V3_UP;
     }
-
+    
     // Get the cursor position and generate a rotation matrix from it.
     double CursorPositionX, CursorPositionY;
     GetCursorPositionDelta(&CursorPositionX, &CursorPositionY);
@@ -95,4 +97,3 @@ void NoClipCameraUpdate(Camera* camera, const double deltaTime, const double rat
     Matrix rotationMatrix = ToMatrix(Invert(camera->Rotation));
     camera->ViewMatrix =  camera->Transform * rotationMatrix * Perspective(DEG2RAD * camera->Fov, ratio, camera->NearClip, camera->FarClip);
 }
-

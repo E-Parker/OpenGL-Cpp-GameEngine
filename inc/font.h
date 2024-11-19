@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cassert>
-#include <stb_truetype.h>
+#include "stb_truetype.h"
 
 // Forward Declarations:
 struct Material;

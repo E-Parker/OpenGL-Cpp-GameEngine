@@ -13,7 +13,6 @@
 #define GET_ASSET_TRANSFORM(Asset) ((Matrix*)(((uint8_t*)Asset) + 48))
 #define GET_ASSET_PARENT(Asset) ((void*)(((uint8_t*)Asset) + 112))
 
-
 typedef struct min_asset {
     // Minimum Asset Definition, 48 bytes long. Only stores the alias, references, type and flags.
     #define MIN_ASSET_BODY()\

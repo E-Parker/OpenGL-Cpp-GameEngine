@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #include "vectorMath.h"
-#include "Material.h"
+#include "material.h"
 #include "renderable.h"
 
 void FreeMesh(Mesh* mesh) {
