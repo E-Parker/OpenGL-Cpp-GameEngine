@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(OpenGL_GL_PREFERENCE GLVND)
 
 # Add the cmake directory to the module path
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Include GLFW3
 include_directories(${GLFW3_INCLUDE_DIRS})
@@ -18,7 +18,7 @@ include_directories(${GLFW3_INCLUDE_DIRS})
 find_package(GLFW3 REQUIRED)
 
 # Include header files
-include_directories(${CMAKE_SOURCE_DIR}/inc)
+include_directories("${CMAKE_SOURCE_DIR}/inc")
 
 # Gather all cpp and c files from the soruce directory
 file(GLOB_RECURSE SOURCES 

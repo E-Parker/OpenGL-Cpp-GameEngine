@@ -16,8 +16,8 @@
 #include "mesh.h"
 #include "font.h"
 
-constexpr int SCREEN_WIDTH = 640;
-constexpr int SCREEN_HEIGHT = 480;
+constexpr int SCREEN_WIDTH = 1280;
+constexpr int SCREEN_HEIGHT = 720;
 
 
 int main(void) {
@@ -32,8 +32,7 @@ int main(void) {
     
     // Load Textures:
     CreateTexture("./assets/defaultAssets/missingTexture.png", "MissingTexture", GL_RGBA, GL_RGBA, false, false, false, GL_LINEAR);
-    CreateTexture("./assets/defaultAssets/ErrorModelTexture.png", "ErrorTexture", GL_RGBA, GL_RGBA, false, false, true, GL_LINEAR);
-
+    
     // Load Materials:
     Material* DefaultTextMaterial = new Material("./assets/shaders/defaultText.vert", "./assets/shaders/defaultText.frag", 1, GL_BACK, GL_ALWAYS);
     Material* NormalMaterial = new Material("./assets/shaders/default.vert", "./assets/shaders/normal_color.frag", 0, GL_BACK, GL_LESS);
@@ -45,6 +44,7 @@ int main(void) {
     
     // Load Font:
     Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 14.0f);
+    
     
     // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
     TextRender* testText = new TextRender();
@@ -91,7 +91,7 @@ int main(void) {
         SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 1.0f);
         DrawTextMesh(testText, mainCamera, AspectRatio(), (GLfloat)Time());
         
-        
+
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 
