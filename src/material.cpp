@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-#include "createShader.h"
+#include "shader.h"
 #include "hashTable.h"
 #include "material.h"
 #include "texture.h"
@@ -28,12 +28,9 @@ Material::Material(const char* vertexProgramPath, const char* fragmentProgramPat
     GLuint FragmentProgram = GL_NONE;
 
     // compile the shader programs
-    char* vertSrc = CreateShader(&VertexProgram, GL_VERTEX_SHADER, vertexProgramPath);
-    char* fragSrc = CreateShader(&FragmentProgram, GL_FRAGMENT_SHADER, fragmentProgramPath);
+    CreateShader(&VertexProgram, GL_VERTEX_SHADER, vertexProgramPath);
+    CreateShader(&FragmentProgram, GL_FRAGMENT_SHADER, fragmentProgramPath);
     Program = CreateProgram(VertexProgram, FragmentProgram);
-
-    delete[] fragSrc;
-    delete[] vertSrc;
 
 }
 
@@ -58,68 +55,6 @@ Material::~Material() {
     glDeleteProgram(Program);
     Program = GL_NONE;
 }
-
-
-
-typedef struct UniformObject {
-    char* Type;
-    char* Alias;
-    void* Data;
-
-    UniformObject(char* type, char* alias) : Type(type), Alias(alias) { }
-    ~UniformObject() {
-        delete[] Type;
-        delete[] Alias;
-        Type = nullptr;
-        Alias = nullptr;
-    }
-
-} UniformObject;
-
-
-std::vector<UniformObject*>* GetUniformsFromSource(const char* src) {
-    // Parse the file line by line to find uniforms.    "uniform"
-
-    std::stringstream stream(src);
-    std::vector<UniformObject*>* uniforms = new std::vector<UniformObject*>();
-
-    char lineBuffer[128];
-
-    while (!stream.eof()) {
-
-        stream.getline(lineBuffer, 128);       // Get the current line from the file.
-
-        std::stringstream dataStream(lineBuffer);
-        std::string segment;
-
-        std::vector<std::string> segmentList;
-
-        while (std::getline(dataStream, segment, ' ')) {
-            segmentList.push_back(segment);
-        }
-
-        if (segmentList.size() < 3) {
-            continue;
-        }
-
-        if (strcmp(segmentList[0].c_str(), "uniform") != 0) {
-            continue;
-        }
-
-        char* type = new char[segmentList[1].length() + 1]; // Make room for the null terminator.
-        memcpy(type, segmentList[1].c_str(), segmentList[1].length() + 1);
-
-        char* alias = new char[segmentList[2].length()];    // Replace the ";" at the end of the line with the null terminator.
-        memcpy(alias, segmentList[2].c_str(), segmentList[1].length());
-        alias[segmentList[1].length()] = '\0';
-
-        UniformObject* newObject = new UniformObject(type, alias);
-
-        uniforms->push_back(newObject);
-    }
-    return uniforms;
-}
-
 
 
 void SetTextureFromPointer(const Material* material, Texture* texture, uint16_t index){

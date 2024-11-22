@@ -11,6 +11,7 @@
 
 #include "vectorMath.h"
 #include "hashTable.h"
+#include "cStringUtilities.h"
 #include "camera.h"
 #include "texture.h"
 #include "material.h"

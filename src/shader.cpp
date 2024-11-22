@@ -7,11 +7,11 @@
 #include <cstring>
 #include <vector>
 
-#include "createShader.h"
+#include "shader.h"
 
 #define GL_ERROR_LOG_SIZE 512
 
-char* CreateShader(GLuint* shader, GLint type, const char* path) {
+void CreateShader(GLuint* shader, GLint type, const char* path) {
     
     std::stringstream stream;
 
@@ -28,7 +28,7 @@ char* CreateShader(GLuint* shader, GLint type, const char* path) {
     }
     catch (std::ifstream::failure& e) {
         std::cout << "Shader (" << path << ") not found: " << e.what() << std::endl;
-        return nullptr;
+        return;
     }
 
     // Verify shader type matches shader file extension
@@ -37,20 +37,20 @@ char* CreateShader(GLuint* shader, GLint type, const char* path) {
 		case GL_VERTEX_SHADER: 
 			if (strcmp(ext, ".vert")) {
 				std::cout << '"' << ext << '"' << " Does not match type Vertex." << std::endl; 
-				return nullptr;
+				return;
 			}
 			break;
 		
 		case GL_FRAGMENT_SHADER:
 			if (strcmp(ext, ".frag")) {
 				std::cout << '"' << ext << '"' << " Does not match type Fragment." << std::endl; 
-				return nullptr;
+				return;
 			}
 			break;
 				
 		default:    
 			std::cout << "Invalid shader type." << std::endl;
-			return nullptr;
+			return;
     }
 
     // Get the raw file as a string to compile
@@ -72,8 +72,6 @@ char* CreateShader(GLuint* shader, GLint type, const char* path) {
         glGetShaderInfoLog(*shader, GL_ERROR_LOG_SIZE, NULL, infoLog);
         std::cout << "Shader failed to compile: \n" << infoLog << std::endl;
     }
-
-    return src;
 }
 
 

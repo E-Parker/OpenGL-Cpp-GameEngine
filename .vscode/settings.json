@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "vector": "cpp",
+        "glad.h": "c",
+        "cstringutilities.h": "c",
+        "glfw3.h": "c",
+        "shaderuniform.h": "c"
+    }
+}
