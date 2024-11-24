@@ -15,25 +15,33 @@ bool TextureManager::FindTexture(const char* alias, Texture*& outValue) {
     return TextureTable.Find(alias, outValue);
 }
 
-void TextureManager::InternalUploadTexture(Texture* texture, uint8_t* data, GLenum internalFormat, GLenum format) {
-    glGenTextures(1, &texture->ID);
-    glBindTexture(GL_TEXTURE_2D, texture->ID);
+void TextureManager::InternalUploadTexture(Texture* texture, uint8_t* data, GLenum internalFormat, GLenum format, GLenum uploadType = GL_TEXTURE_2D) {
+    
+    if (texture->ID == GL_NONE) {
+        glGenTextures(1, &texture->ID);
+    }
+
+    glBindTexture(texture->type, texture->ID);
     glTextureParameteri(texture->ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTextureParameteri(texture->ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTextureParameteri(texture->ID, GL_TEXTURE_MIN_FILTER, texture->filterType);
     glTextureParameteri(texture->ID, GL_TEXTURE_MAG_FILTER, texture->filterType);
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(uploadType, 0, internalFormat, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
 }
 
-void TextureManager::InternalUploadTextureMimmap(Texture* texture, uint8_t* data, GLenum internalFormat, GLenum format) {
-    glGenTextures(1, &texture->ID);
-    glBindTexture(GL_TEXTURE_2D, texture->ID);
+void TextureManager::InternalUploadTextureMimmap(Texture* texture, uint8_t* data, GLenum internalFormat, GLenum format, GLenum uploadType = GL_TEXTURE_2D) {
+    
+    if (texture->ID == GL_NONE) {
+        glGenTextures(1, &texture->ID);
+    }
+
+    glBindTexture(texture->type, texture->ID);
     glTextureParameteri(texture->ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTextureParameteri(texture->ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTextureParameteri(texture->ID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTextureParameteri(texture->ID, GL_TEXTURE_MAG_FILTER, texture->filterType);
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexImage2D(uploadType, 0, internalFormat, texture->width, texture->height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(texture->type);
 }
 
 void TextureManager::InternalDeleteTexture(Texture* texture) {
@@ -45,6 +53,7 @@ void TextureManager::InternalDeleteTexture(Texture* texture) {
         TextureTable.Delete(texture->alias);
     }
 }
+
 
 void TextureManager::InternalCreateTexture(Texture* texture, const bool isManaged, const char* alias, const GLenum internalFormat, const GLenum format, uint8_t* data, bool useMipmap) {
     /* Internal function for creating managed textures. */
@@ -60,6 +69,7 @@ void TextureManager::InternalCreateTexture(Texture* texture, const bool isManage
     texture->references++;
 
 }
+
 
 void TextureManager::CreateRawTexture(const char* path, Texture* texture, GLenum internalFormat, GLenum format, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
     /* This function creates a new, unmanaged texture from the file path and the alias. if the texture already exists in memory, the returned value will be that one. */
@@ -82,6 +92,7 @@ void TextureManager::CreateRawTexture(const char* path, Texture* texture, GLenum
 
 }
 
+
 Texture* CreateTexture(const char* path, const char* alias, GLenum internalFormat, GLenum format, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
     /* This function creates a new texture from the file path and the alias. if the texture already exists in memory, the returned value will be that one.
     This will hopefully save delectably scrumptious graphics memory mmmhh. If an alias is not provided, the texture will use it's path as an alias. */
@@ -98,7 +109,7 @@ Texture* CreateTexture(const char* path, const char* alias, GLenum internalForma
 
     // if the texture doesn't already exist, make a new one, and return that instead.
     if (texture != nullptr) {
-        return nullptr;
+        return texture;
     }
 
     texture = new Texture();
@@ -121,6 +132,39 @@ Texture* CreateTexture(const char* path, const char* alias, GLenum internalForma
     return texture;
 }
 
+
+Texture* CreateCubemapTexture(const char* texturePaths[6], const char* alias, GLenum internalFormat, GLenum format, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
+
+    Texture* texture = nullptr;
+    TextureTable.Find(alias, texture);
+
+    // if the texture doesn't already exist, make a new one, and return that instead.
+    if (texture != nullptr) {
+        return texture;
+    }
+     
+    texture = new Texture();
+    texture->filterType = filterType;
+    texture->type = GL_TEXTURE_CUBE_MAP;
+
+    for (uint16_t i = 0; i < 6; i++) {
+
+        stbi_set_flip_vertically_on_load(true);
+        uint8_t* data = stbi_load(texturePaths[i], &texture->width, &texture->height, &texture->channels, 0);
+        
+        if (data == nullptr) {
+            std::cout << "Error creating Cube Map Texture: \"" << alias << "\" At index, " << i << ", From: \"" << texturePaths[i] << "\". The texture will be discarded." << std::endl;
+            return nullptr;
+        }
+
+        TextureManager::InternalUploadTexture(texture, data, internalFormat, format, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i);
+        stbi_image_free(data);
+    }
+
+    return nullptr;
+}
+
+
 void DeleteTexture(const char* alias) {
     /* This function manages deleting textures from the table. The texture will be deleted from graphics memory if it isn't referenced anywhere. */
 
@@ -139,6 +183,7 @@ void DeleteTexture(const char* alias) {
 
     TextureManager::InternalDeleteTexture(texture);
 }
+
 
 void DereferenceTextures() {
     /* Call this function at the end of your program to ensure all tracked textures are properly cleaned up. */
