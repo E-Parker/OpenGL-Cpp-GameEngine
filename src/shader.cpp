@@ -11,7 +11,7 @@
 
 #define GL_ERROR_LOG_SIZE 512
 
-void CreateShader(GLuint* shader, GLint type, const char* path) {
+void CompileShader(GLuint* shader, GLint type, const char* path) {
     
     std::stringstream stream;
 
@@ -75,7 +75,7 @@ void CreateShader(GLuint* shader, GLint type, const char* path) {
 }
 
 
-GLuint CreateProgram(GLuint vs, GLuint fs) {
+GLuint CompileShaderProgram(GLuint vs, GLuint fs) {
     /* This function compiles a vertex and fragment shader into a program to run on the GPU. */
     
     // Set up a new shader program and compile it.

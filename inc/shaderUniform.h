@@ -24,5 +24,4 @@ typedef struct Shader {
 
 Shader* CreateShader(GLuint program, const char* alias);
 void FreeShader(Shader** shader);
-
 void GetUniform(const Shader* shader, const char* alias, Uniform** outVal);

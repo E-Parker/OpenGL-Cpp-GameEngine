@@ -49,16 +49,20 @@ char* FindBufferEnd(const char* buffer) {
 Shader* CreateShader(GLuint program, const char* alias) {
     /* create a new shader, populate the fields and return a pointer to it. */
 
-    Shader* shader = (Shader*)malloc(sizeof(Shader));
-
     // Get the number of uniforms.
     GLint* params = NULL;
     glGetProgramiv(program, GL_ACTIVE_UNIFORMS, params);
+
+    if (params == NULL) {
+        // something has gone very wrong and the shader has no uniforms.
+        assert(false);
+    }
+
     GLint uniformCount = *params;
     free(params);
 
-    // Generate array for the uniforms.
-    shader->Uniforms = (Uniform*)malloc(uniformCount * sizeof(Uniform));
+    Shader* shader = (Shader*)malloc(sizeof(Shader));
+    shader->Uniforms = (Uniform*)malloc(uniformCount * sizeof(Uniform));    // Generate array for the uniforms.
     uint16_t dataBlockSize = 0;
 
     // Get the uniforms.
@@ -94,6 +98,8 @@ Shader* CreateShader(GLuint program, const char* alias) {
 
     // Generate the lookup for the data.
     shader->Lookup = (uint64_t*)malloc(uniformCount * sizeof(uint64_t));
+    assert(shader->Lookup = NULL);
+    
     memset(shader->Lookup, 0xFF, uniformCount * sizeof(uint64_t));
     // ^^^ 0xFF is a safe assumption because the maximum uniforms OpenGL can handle is 1024.
     
@@ -162,8 +168,8 @@ void GetUniform(const Shader* shader, const char* alias, Uniform** outVal) {
         hash %= shader->UniformCount;
 
         if(hash == originalHash) {
-            return;
             outVal = NULL;
+            return;
         }
     }
 

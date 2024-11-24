@@ -28,9 +28,9 @@ Material::Material(const char* vertexProgramPath, const char* fragmentProgramPat
     GLuint FragmentProgram = GL_NONE;
 
     // compile the shader programs
-    CreateShader(&VertexProgram, GL_VERTEX_SHADER, vertexProgramPath);
-    CreateShader(&FragmentProgram, GL_FRAGMENT_SHADER, fragmentProgramPath);
-    Program = CreateProgram(VertexProgram, FragmentProgram);
+    CompileShader(&VertexProgram, GL_VERTEX_SHADER, vertexProgramPath);
+    CompileShader(&FragmentProgram, GL_FRAGMENT_SHADER, fragmentProgramPath);
+    Program = CompileShaderProgram(VertexProgram, FragmentProgram);
 
 }
 
