@@ -15,6 +15,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "font.h"
+#include "shaderUniform.h"
 
 constexpr int SCREEN_WIDTH = 1280;
 constexpr int SCREEN_HEIGHT = 720;
@@ -58,6 +59,9 @@ int main(void) {
     *transform = *transform * Translate(0.0f, 0.0f, -1.0f);
 
     Camera* mainCamera = new Camera(NoClipCameraUpdate);
+
+    //Shader* testShader = CreateShader(Mat0->Program, "TestShader");
+    //FreeShader(&testShader);
 
     int x = 0;
     int y = 0;

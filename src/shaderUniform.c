@@ -41,16 +41,94 @@ char* FindBufferEnd(const char* buffer) {
         }
         bufferEnd++;
     }
-
     return bufferEnd;
 }
 
 
-Shader* CreateShader(GLuint program, const char* alias) {
-    /* create a new shader, populate the fields and return a pointer to it. */
+const int size_from_gl_type(const GLenum Type) {
+    // I would like to not have a massive switch case but there isn't really a better way.
+    // The API just does not have functionality for this since GLfloat and GLint are always assumed to be 
+    // exactly the same as C / C++ standards. 
+    switch (Type) {
+    case GL_FLOAT: return sizeof(GLfloat);
+    case GL_FLOAT_VEC2: return sizeof(GLfloat) * 2;
+    case GL_FLOAT_VEC3: return sizeof(GLfloat) * 3;
+    case GL_FLOAT_VEC4: return sizeof(GLfloat) * 4;
+    case GL_DOUBLE: return sizeof(GLdouble);
+    case GL_DOUBLE_VEC2: return sizeof(GLdouble) * 2;
+    case GL_DOUBLE_VEC3: return sizeof(GLdouble) * 3;
+    case GL_DOUBLE_VEC4: return sizeof(GLdouble) * 4;
+    case GL_INT: return sizeof(GLint);
+    case GL_INT_VEC2: return sizeof(GLint) * 2;
+    case GL_INT_VEC3: return sizeof(GLint) * 3;
+    case GL_INT_VEC4: return sizeof(GLint) * 4;
+    case GL_UNSIGNED_INT: return sizeof(GLuint);
+    case GL_UNSIGNED_INT_VEC2: return sizeof(GLuint) * 2;
+    case GL_UNSIGNED_INT_VEC3: return sizeof(GLuint) * 3;
+    case GL_UNSIGNED_INT_VEC4: return sizeof(GLuint) * 4;
+    case GL_BOOL: return sizeof(GLboolean);
+    case GL_BOOL_VEC2: return sizeof(GLboolean) * 2;
+    case GL_BOOL_VEC3: return sizeof(GLboolean) * 3;
+    case GL_BOOL_VEC4: return sizeof(GLboolean) * 4;
+    case GL_FLOAT_MAT2: return sizeof(GLfloat) * 4;
+    case GL_FLOAT_MAT2x3: return sizeof(GLfloat) * 6;
+    case GL_FLOAT_MAT2x4: return sizeof(GLfloat) * 8;
+    case GL_FLOAT_MAT3: return sizeof(GLfloat) * 9;
+    case GL_FLOAT_MAT3x2: return sizeof(GLfloat) * 6;
+    case GL_FLOAT_MAT3x4: return sizeof(GLfloat) * 12;
+    case GL_FLOAT_MAT4: return sizeof(GLfloat) * 16;
+    case GL_FLOAT_MAT4x2: return sizeof(GLfloat) * 6;
+    case GL_FLOAT_MAT4x3: return sizeof(GLfloat) * 12;
+    case GL_DOUBLE_MAT2: return sizeof(GLfloat) * 4;
+    case GL_DOUBLE_MAT2x3: return sizeof(GLfloat) * 6;
+    case GL_DOUBLE_MAT2x4: return sizeof(GLfloat) * 8;
+    case GL_DOUBLE_MAT3: return sizeof(GLfloat) * 9;
+    case GL_DOUBLE_MAT3x2: return sizeof(GLfloat) * 6;
+    case GL_DOUBLE_MAT3x4: return sizeof(GLfloat) * 12;
+    case GL_DOUBLE_MAT4: return sizeof(GLfloat) * 16;
+    case GL_DOUBLE_MAT4x2: return sizeof(GLfloat) * 6;
+    case GL_DOUBLE_MAT4x3: return sizeof(GLfloat) * 12;
+    default: return 0;
+    }
+}
 
+
+Uniform* init_uniform(const GLenum Type, const GLuint elements, const char* name, const int length) {
+    // Internal function to initialize a Uniform* 
+    
+    assert(elements != 0);
+
+    // Get the byte size of the type.
+    int size = size_from_gl_type(Type);
+
+    // allocate enough space for the Uniform header + the space required to store it's data. 
+    Uniform* newUniform = (Uniform*)malloc(sizeof(Uniform) + (size * elements));
+    assert(newUniform != NULL);
+
+    // Set size and number of elements variables.
+    newUniform->Size = size;
+    newUniform->Elements = elements;
+
+    // allocate the buffer for the alias including the null terminator.
+    newUniform->Alias = (char*)malloc(length + 1);
+    assert(newUniform->Alias != NULL);
+
+    memcpy(newUniform->Alias, name, length + 1);
+    newUniform->AliasEnd = newUniform->Alias + length + 1;
+
+    // zero out the data section, if it exists.
+    if (size != 0) {
+        memset(uniform_data(newUniform), 0, uniform_size(newUniform));
+    }
+
+    return newUniform;
+}
+
+
+GLint UniformCount(const GLuint program) {
     // Get the number of uniforms.
-    GLint* params = NULL;
+
+    GLint* params = (GLint*)malloc(sizeof(GLint));
     glGetProgramiv(program, GL_ACTIVE_UNIFORMS, params);
 
     if (params == NULL) {
@@ -59,52 +137,74 @@ Shader* CreateShader(GLuint program, const char* alias) {
     }
 
     GLint uniformCount = *params;
+    char* buffer = (char*)malloc(MAX_ALIAS_SIZE);
+
+    for (GLint i = 0; i < *params; i++) {
+        GLsizei length;
+        GLint elements;
+        GLenum type;
+
+        glGetActiveUniform(program, i, MAX_ALIAS_SIZE, &length, &elements, &type, buffer);
+
+        // if an invalid uniform was found, decrement the count.
+        if (size_from_gl_type(type) == -1) {
+            uniformCount--;
+        }
+    }
+
     free(params);
+    free(buffer);
 
-    Shader* shader = (Shader*)malloc(sizeof(Shader));
-    shader->Uniforms = (Uniform*)malloc(uniformCount * sizeof(Uniform));    // Generate array for the uniforms.
-    uint16_t dataBlockSize = 0;
+    return uniformCount;
+}
 
-    // Get the uniforms.
-    for(GLint i = 0; i < uniformCount; i++) {
-        
-        Uniform* uniform = &shader->Uniforms[i];        // Get the current uniform.
-        char* buffer = (char*)malloc(MAX_ALIAS_SIZE);   // Set up buffer for the uniform's name.
-        GLsizei actualLength;                       
 
-        glGetActiveUniform(program, i, MAX_ALIAS_SIZE, &actualLength, &uniform->Size, &uniform->Type, buffer);
-        actualLength++; // increment by 1 to account for the null terminator.
+Shader* CreateShader(const GLuint program, const char* alias) {
+    /* create a new shader, populate the fields and return a pointer to it. */
 
-        shader->Uniforms[i].Alias = (char*)malloc(actualLength);    // allocate the buffer for the alias including the null terminator.
-        memcpy(uniform->Alias, &buffer, actualLength);              // Copy the data to the alias
-        uniform->AliasEnd = uniform->Alias + actualLength;          // Set a reference to the end of the string.
-        dataBlockSize += uniform->Size;                             // Update the block size so we allocate enough data for each uniform.
-    }
+    GLint uniformCount = UniformCount(program);
+    size_t UniformArraySize = uniformCount * sizeof(Uniform*);
+    size_t UniformLookupSize = uniformCount * sizeof(uint64_t);
+    size_t shaderAlocationSize = sizeof(Shader) + UniformArraySize + UniformLookupSize;
 
-    // Generate the data block of the uniforms.
-    //
-    // the idea here is to store all of the uniforms in one homogeneous block so it can be uploaded 
-    // in one pass. Each uniform's Data pointer just stores an offset into the block.
-    //
-    shader->Data = malloc(dataBlockSize);
-    uint16_t offset = 0;
+    // Just in case there's any alignment issues, ensure the block is padded to be exactly a multiple of four.
+    shaderAlocationSize += shaderAlocationSize % 4;
+
+    // Allocate the shader and it's buffers.
+    Shader* shader = (Shader*)malloc(shaderAlocationSize);
+    assert(shader != NULL);
+
+    // Store the Uniforms and Lookup as direct offsets into the same memory block.
+    shader->Uniforms = (Uniform**)((char*)shader + sizeof(Shader));
+    shader->Lookup = (uint64_t*)((char*)shader + sizeof(Shader) + UniformArraySize);
+
+    char* buffer = (char*)malloc(MAX_ALIAS_SIZE);
 
     for(GLint i = 0; i < uniformCount; i++) {
-        Uniform* uniform = &shader->Uniforms[i];
-        uniform->Data = (uint8_t*)shader->Data + offset;
-        offset += uniform->Size;
+
+        GLsizei length;                       
+        GLint elements;
+        GLenum type;
+
+        glGetActiveUniform(program, i, MAX_ALIAS_SIZE, &length, &elements, &type, buffer);
         
+        // skip any invalid elements.
+        if (size_from_gl_type(type) == -1) {
+            continue;
+        }
+
+        shader->Uniforms[i] = init_uniform(type, elements, buffer, length);
     }
+
+    free(buffer);
 
     // Generate the lookup for the data.
-    shader->Lookup = (uint64_t*)malloc(uniformCount * sizeof(uint64_t));
-    assert(shader->Lookup = NULL);
-    
+
     memset(shader->Lookup, 0xFF, uniformCount * sizeof(uint64_t));
     // ^^^ 0xFF is a safe assumption because the maximum uniforms OpenGL can handle is 1024.
     
     for(GLint i = 0; i < uniformCount; i++) {
-        Uniform* uniform = &shader->Uniforms[i];
+        Uniform* uniform = shader->Uniforms[i];
         uint64_t hash = fnvHash64(uniform->Alias, uniform->AliasEnd) % uniformCount;
         uint16_t originalHash = hash;
 
@@ -117,19 +217,25 @@ Shader* CreateShader(GLuint program, const char* alias) {
                 assert(false);
             }
         }
+
         // set the lookup value so the array of Uniforms can be kept in order.
         // When accessing uniforms by alias, do the hash table lookup to get the index of the uniform.
         shader->Lookup[hash] = i;
     }
 
-
     char* aliasEnd = FindBufferEnd(alias);
-    char* shaderName = (char*)malloc(alias - aliasEnd);
-    memcpy(shaderName, alias, alias - aliasEnd);
+    uint64_t aliasLength = aliasEnd - alias + 1;
+
+    char* shaderName = (char*)malloc(aliasLength);
+    assert(shaderName != NULL);
+
+    memcpy(shaderName, alias, aliasLength);
 
     shader->Program = program;
     shader->Alias = shaderName;
+    shader->AliasEnd = aliasEnd;
     shader->Program = program;
+    shader->UniformCount = uniformCount;
 
     return shader;
 
@@ -143,12 +249,10 @@ void FreeShader(Shader** shader){
     (*shader)->Program = GL_NONE;
 
     for(GLuint i = 0; i < (*shader)->UniformCount; i++) {
-        free((*shader)->Uniforms[i].Alias);
+        Uniform* uniform = (*shader)->Uniforms[i];
+        free(uniform->Alias);
     }
 
-    free((*shader)->Uniforms);
-    free((*shader)->Data);
-    free((*shader)->Lookup);
     free((*shader)->Alias);
     free((*shader));
     *shader = NULL;
@@ -163,7 +267,7 @@ void GetUniform(const Shader* shader, const char* alias, Uniform** outVal) {
     uint16_t originalHash = hash;
 
     // iterate through the lookup table until a match has been found.
-    while (strcmp(shader->Uniforms[shader->Lookup[hash]].Alias, alias) != 0) {
+    while (strcmp(shader->Uniforms[shader->Lookup[hash]]->Alias, alias) != 0) {
         hash++;
         hash %= shader->UniformCount;
 
@@ -173,6 +277,6 @@ void GetUniform(const Shader* shader, const char* alias, Uniform** outVal) {
         }
     }
 
-    *outVal = &shader->Uniforms[shader->Lookup[hash]];
+    *outVal = shader->Uniforms[shader->Lookup[hash]];
 }
 

@@ -4,17 +4,6 @@
 template<typename T> class HashTable;
 struct Texture;
 
-
-typedef struct Uniform {
-    /* struct to store openGL uniform information. This is still very WIP. */
-
-    char* alias;    //name of the uniform.
-    GLint location; // GPU location of the uniform.
-    void* data;     // Arbetrary data that differs depending on the uniform type.
-    
-
-} Uniform;
-
 typedef struct Material {
 
 public:
