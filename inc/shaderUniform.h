@@ -19,8 +19,7 @@ typedef struct Shader {
     Uniform* Uniforms;  // Array of uniforms expected by the program.    
     void* Data;         // Raw data of each uniform in a large block.
     uint64_t* Lookup;   // Lookup table for Uniforms. 
-    // This allows uniforms to be stored in order while allowing for a hashtable for fast retrieval.
-
+    // This allows uniforms to be stored in order while allowing for a hash table for fast retrieval.
 } Shader;
 
 Shader* CreateShader(GLuint program, const char* alias);

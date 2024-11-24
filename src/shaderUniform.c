@@ -79,7 +79,7 @@ Shader* CreateShader(GLuint program, const char* alias) {
 
     // Generate the data block of the uniforms.
     //
-    // the idea here is to store all of the uniforms in one homogenous block so it can be uploaded 
+    // the idea here is to store all of the uniforms in one homogeneous block so it can be uploaded 
     // in one pass. Each uniform's Data pointer just stores an offset into the block.
     //
     shader->Data = malloc(dataBlockSize);
@@ -112,7 +112,7 @@ Shader* CreateShader(GLuint program, const char* alias) {
             }
         }
         // set the lookup value so the array of Uniforms can be kept in order.
-        // When accessing uniforms by alias, do the hashtable lookup to get the index of the uniform.
+        // When accessing uniforms by alias, do the hash table lookup to get the index of the uniform.
         shader->Lookup[hash] = i;
     }
 
@@ -136,7 +136,7 @@ void FreeShader(Shader** shader){
     glDeleteProgram((*shader)->Program);
     (*shader)->Program = GL_NONE;
 
-    for(GLuint i = 0; i < (*shader)->UniformCount; i++){
+    for(GLuint i = 0; i < (*shader)->UniformCount; i++) {
         free((*shader)->Uniforms[i].Alias);
     }
 
