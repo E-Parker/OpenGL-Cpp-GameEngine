@@ -18,8 +18,8 @@ typedef struct Uniform {
 // "Constructor" for the Uniform.
 Uniform* init_uniform(const GLenum Type, const GLuint elements, const char* name, const int length);
 
-#define uniform_data(u) ((void*)((char*)u + sizeof(Uniform)))                   // Data stored by the uniform.
-#define uniform_size(u) (uint64_t)(((Uniform*)u)->Size + ((Uniform*)u)->Elements) // Size of a uniform in bytes. This will vary depending on the type stored there.
+#define uniform_data(u) ((void*)((char*)u + sizeof(Uniform)))                               // Data stored by the uniform.
+#define uniform_data_size(u) (uint64_t)(((Uniform*)u)->Size * ((Uniform*)u)->Elements)      // Size of a uniform's data in bytes. This will vary depending on the type stored there.
 
 typedef struct Shader {
     char* Alias;        // Name of the shader.

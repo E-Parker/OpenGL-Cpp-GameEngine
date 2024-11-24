@@ -6,91 +6,11 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "cStringUtilities.h"
+#include "shaderUniformTypes.h"
 #include "shaderUniform.h"
 
 #define MAX_ALIAS_SIZE 512
-
-// I had to redefine these here because c doesn't know what const_cast<>() is.
-
-uint64_t fnvHash64(const char* buffer, const char* const bufferEnd) {
-    /* implementation of the fnv64 hashing function, created by Glenn Fowler, Landon Curt Noll,
-    and Kiem-Phong Vo. I used fixed-width integers here for maximum portability. */
-
-    const uint64_t Prime = 0x00000100000001B3;
-    uint64_t Hash = 0xCBF29CE484222325;
-
-    char* bufferIter = (char*)buffer;
-
-    // Iterate from the buffer start address to the buffer end address.
-    for (; bufferIter < bufferEnd; bufferIter++) {
-        //XOR the current hash with the current character, then multiply by an arbitrary prime number.
-        Hash = (Hash ^ (*bufferIter)) * Prime;
-    }
-    return Hash;
-}
-
-
-char* FindBufferEnd(const char* buffer) {
-
-    char* bufferEnd = (char*)buffer;
-
-    // Assume the key is a c_string, iterate through to find the null terminator.
-    for (uint16_t i = 0; i < 0xFFFF; i++) {
-        if (*bufferEnd == '\0') {
-            break;
-        }
-        bufferEnd++;
-    }
-    return bufferEnd;
-}
-
-
-const int size_from_gl_type(const GLenum Type) {
-    // I would like to not have a massive switch case but there isn't really a better way.
-    // The API just does not have functionality for this since GLfloat and GLint are always assumed to be 
-    // exactly the same as C / C++ standards. 
-    switch (Type) {
-    case GL_FLOAT: return sizeof(GLfloat);
-    case GL_FLOAT_VEC2: return sizeof(GLfloat) * 2;
-    case GL_FLOAT_VEC3: return sizeof(GLfloat) * 3;
-    case GL_FLOAT_VEC4: return sizeof(GLfloat) * 4;
-    case GL_DOUBLE: return sizeof(GLdouble);
-    case GL_DOUBLE_VEC2: return sizeof(GLdouble) * 2;
-    case GL_DOUBLE_VEC3: return sizeof(GLdouble) * 3;
-    case GL_DOUBLE_VEC4: return sizeof(GLdouble) * 4;
-    case GL_INT: return sizeof(GLint);
-    case GL_INT_VEC2: return sizeof(GLint) * 2;
-    case GL_INT_VEC3: return sizeof(GLint) * 3;
-    case GL_INT_VEC4: return sizeof(GLint) * 4;
-    case GL_UNSIGNED_INT: return sizeof(GLuint);
-    case GL_UNSIGNED_INT_VEC2: return sizeof(GLuint) * 2;
-    case GL_UNSIGNED_INT_VEC3: return sizeof(GLuint) * 3;
-    case GL_UNSIGNED_INT_VEC4: return sizeof(GLuint) * 4;
-    case GL_BOOL: return sizeof(GLboolean);
-    case GL_BOOL_VEC2: return sizeof(GLboolean) * 2;
-    case GL_BOOL_VEC3: return sizeof(GLboolean) * 3;
-    case GL_BOOL_VEC4: return sizeof(GLboolean) * 4;
-    case GL_FLOAT_MAT2: return sizeof(GLfloat) * 4;
-    case GL_FLOAT_MAT2x3: return sizeof(GLfloat) * 6;
-    case GL_FLOAT_MAT2x4: return sizeof(GLfloat) * 8;
-    case GL_FLOAT_MAT3: return sizeof(GLfloat) * 9;
-    case GL_FLOAT_MAT3x2: return sizeof(GLfloat) * 6;
-    case GL_FLOAT_MAT3x4: return sizeof(GLfloat) * 12;
-    case GL_FLOAT_MAT4: return sizeof(GLfloat) * 16;
-    case GL_FLOAT_MAT4x2: return sizeof(GLfloat) * 6;
-    case GL_FLOAT_MAT4x3: return sizeof(GLfloat) * 12;
-    case GL_DOUBLE_MAT2: return sizeof(GLfloat) * 4;
-    case GL_DOUBLE_MAT2x3: return sizeof(GLfloat) * 6;
-    case GL_DOUBLE_MAT2x4: return sizeof(GLfloat) * 8;
-    case GL_DOUBLE_MAT3: return sizeof(GLfloat) * 9;
-    case GL_DOUBLE_MAT3x2: return sizeof(GLfloat) * 6;
-    case GL_DOUBLE_MAT3x4: return sizeof(GLfloat) * 12;
-    case GL_DOUBLE_MAT4: return sizeof(GLfloat) * 16;
-    case GL_DOUBLE_MAT4x2: return sizeof(GLfloat) * 6;
-    case GL_DOUBLE_MAT4x3: return sizeof(GLfloat) * 12;
-    default: return 0;
-    }
-}
 
 
 Uniform* init_uniform(const GLenum Type, const GLuint elements, const char* name, const int length) {
@@ -104,8 +24,6 @@ Uniform* init_uniform(const GLenum Type, const GLuint elements, const char* name
     // allocate enough space for the Uniform header + the space required to store it's data. 
     Uniform* newUniform = (Uniform*)malloc(sizeof(Uniform) + (size * elements));
     assert(newUniform != NULL);
-
-    // Set size and number of elements variables.
     newUniform->Size = size;
     newUniform->Elements = elements;
 
@@ -118,7 +36,7 @@ Uniform* init_uniform(const GLenum Type, const GLuint elements, const char* name
 
     // zero out the data section, if it exists.
     if (size != 0) {
-        memset(uniform_data(newUniform), 0, uniform_size(newUniform));
+        memset(uniform_data(newUniform), 0, uniform_data_size(newUniform));
     }
 
     return newUniform;
