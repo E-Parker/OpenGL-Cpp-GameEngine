@@ -26,6 +26,7 @@ UniformBuffer* UniformBuffer_create(const GLenum usage, const char* alias, const
      
     char* bufferAlias = (char*)malloc(aliasSize);
     assert(bufferAlias != NULL);
+
     memcpy(bufferAlias, alias, aliasSize); 
     newBuffer->Alias = bufferAlias;
     newBuffer->AliasEnd = bufferAlias + aliasSize;
@@ -45,12 +46,10 @@ void UniformBuffer_destroy(UniformBuffer** buffer) {
     *buffer = NULL;
 }
 
-void internal_UniformBuffer_set_at(UniformBuffer* buffer, const uint16_t index, const uint64_t itemSize, const void* data) {
-    // do buffer subdata;
-}
-
-void internal_UniformBuffer_set_region(UniformBuffer* buffer, const uint16_t fromIndex, const uint16_t toIndex, const uint64_t regionSize, const void* data) {
-    // do buffer subdata but with a range
+void internal_UniformBuffer_set_region(UniformBuffer* buffer, const uint16_t index, const uint64_t regionSize, const void* data) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer->BufferObject);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, index, regionSize, data);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
 }
 
 void internal_UniformBuffer_set_all(UniformBuffer* buffer, const uint64_t itemSize, const void* data) {

@@ -22,14 +22,13 @@ typedef struct UniformBuffer {
     uint16_t Type;      // GLenum type to be stored.
 } UniformBuffer;
 
-UniformBuffer* internal_UniformBuffer_create(const GLenum usage, const char* alias, const uint64_t itemSize, const uint16_t stride, const uint16_t elements);
+UniformBuffer* UniformBuffer_create (const GLenum usage, const char* alias, const uint64_t itemSize, const uint16_t stride, const uint16_t elements);
 void UniformBuffer_destroy(UniformBuffer** buffer);
-void internal_UniformBuffer_set_at(UniformBuffer* buffer, const uint16_t index, const uint64_t itemSize, const void* data); 
-void internal_UniformBuffer_set_region(UniformBuffer* buffer, const uint16_t fromIndex, const uint16_t toIndex, const uint64_t regionSize, const void* data);
+void internal_UniformBuffer_set_region(UniformBuffer* buffer, const uint16_t index, const uint64_t regionSize, const void* data);
 void internal_UniformBuffer_set_all(UniformBuffer* buffer, const uint64_t itemSize, const void* data);
 
-#define UniformBuffer_set_at(type, buffer, index, data) (internal_UniformBuffer_set_at(buffer, index, sizeof(type), data))
-#define UniformBuffer_set_region(type, buffer, fromIndex, toIndex, data) (internal_UniformBuffer_set_region(buffer, fromIndex, toIndex, (sizeof(type) * (toIndex - fromIndex) * buffer->Stride), data))
+#define UniformBuffer_set_at(type, buffer, index, data) (internal_UniformBuffer_set_region(buffer, index, ((UniformBuffer*)buffer->Size) * buffer->Stride), data))
+#define UniformBuffer_set_region(type, buffer, fromIndex, toIndex, data) (internal_UniformBuffer_set_region(buffer, fromIndex, ((UniformBuffer*)buffer->Size) * (toIndex - fromIndex) * buffer->Stride), data))
 #define UniformBuffer_set_all(type, buffer, data)
 
 //  SHADER UNIFORM
