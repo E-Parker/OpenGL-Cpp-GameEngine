@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-#include "shader.h"
+#include "gl_parse_shader.h"
 #include "hashTable.h"
 #include "material.h"
 #include "texture.h"

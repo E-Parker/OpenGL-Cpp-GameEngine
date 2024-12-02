@@ -7,14 +7,6 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 
-typedef struct AssetAlias {
-    #define ALIAS_HEADER()\
-    char* Alias;\
-    char* AliasEnd;\
-
-    ALIAS_HEADER()
-
-} AssetAlias;
 
 inline uint64_t fnvHash64(const char* buffer, const char* const bufferEnd) {
     // implementation of the fnv64 hashing function, created by Glenn Fowler, Landon Curt Noll,

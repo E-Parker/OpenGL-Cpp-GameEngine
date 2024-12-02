@@ -3,6 +3,11 @@
 #include <cstdint>
 #include "vectorMath.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 // For these macros, the cast to uint8_t then back to void is kind of nasty but it *should* optimize out in the compiler.
 // Since it's not getting moved from a general purpose register to a floating point register, it's probably fine. probably.
 
@@ -63,3 +68,6 @@ void SetAlias(void* gameObject, const char* string);
 Matrix GetGlobalTransform(void* gameObject); 
 
 
+#ifdef __cplusplus
+}
+#endif

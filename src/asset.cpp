@@ -2,6 +2,7 @@
 #include "asset.h"
 #include "vectorMath.h"
 
+
 void SetAlias(void* gameObject, const char* string) {
     /* copy the string into the gameObject alias buffer. */
     char* gameObjectAlias = (char*)gameObject;
@@ -17,7 +18,7 @@ void SetAlias(void* gameObject, const char* string) {
 
 Matrix GetGlobalTransform(void* gameObject) {
     /* This function returns the global transform of any asset. */ 
-    Matrix result = MatrixIdentity() * *GET_ASSET_TRANSFORM(gameObject);
+    Matrix result = *GET_ASSET_TRANSFORM(gameObject);
     void* parentObject;
     
     for(uint16_t i = 0; i < 512; i++) {
