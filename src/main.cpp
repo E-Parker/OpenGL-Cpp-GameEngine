@@ -63,12 +63,14 @@ int main(void) {
     Shader* testShader = Shader_create(Mat0->Program, "TestShader");
     Uniform* mvpUniform;
     Shader_get_uniform(testShader, "u_mvp", &mvpUniform);
+
+    Shader_set_uniform(testShader, "u_mvp", transform);
     
     int x = 0;
-    Uniform_set_data(mvpUniform, transform);
+    //Uniform_set_data(mvpUniform, transform);
     int y = 0;
-    Matrix* mvp = Uniform_get_data(Matrix, mvpUniform);
-    Shader_destroy(&testShader);
+    
+    Matrix* data = Uniform_get_data(Matrix, mvpUniform);
     
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
@@ -118,7 +120,7 @@ int main(void) {
     delete Mat0;
 
     delete testText;
-
+    Shader_destroy(&testShader);
     glUtilTerminate();
     return 0;
 }

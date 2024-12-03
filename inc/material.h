@@ -1,7 +1,7 @@
 #pragma once
 
 //Forward Declarations
-template<typename T> class HashTable;
+typedef struct HashTable;
 struct Texture;
 
 typedef struct Material {
@@ -11,7 +11,7 @@ public:
     uint16_t TexturesUsed = 0;
     Texture** Textures;
 
-    HashTable<GLint>* Uniforms;
+    HashTable* Uniforms;
     
     GLuint Program = GL_NONE;
     GLenum CullFunction = GL_BACK;

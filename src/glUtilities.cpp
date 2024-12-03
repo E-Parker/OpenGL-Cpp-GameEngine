@@ -9,6 +9,9 @@
 
 #include "glUtilities.h"
 
+static InstanceInformation internalInstanceInfo;
+
+
 double Time() {
     return internalInstanceInfo.time;
 }

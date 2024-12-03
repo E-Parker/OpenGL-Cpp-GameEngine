@@ -6,13 +6,14 @@
 #include <cstring>
 #include <iostream>
 
-#include "hashTable.h"
+#include "hash_table.h"
 #include "texture.h"
 
-static HashTable<Texture> TextureTable(512);
 
-bool TextureManager::FindTexture(const char* alias, Texture*& outValue) {
-    return TextureTable.Find(alias, outValue);
+static HashTable* TextureTable = HashTable_create(Texture, 512);
+
+bool TextureManager::FindTexture(const char* alias, Texture** outValue) {
+    return HashTable_find(TextureTable, alias, outValue);
 }
 
 void TextureManager::InternalUploadTexture(Texture* texture, uint8_t* data, GLenum internalFormat, GLenum format, GLenum uploadType = GL_TEXTURE_2D) {
@@ -50,7 +51,7 @@ void TextureManager::InternalDeleteTexture(Texture* texture) {
             glDeleteTextures(1, &(texture->ID));
         }
         texture->ID = GL_NONE;
-        TextureTable.Delete(texture->alias);
+        HashTable_remove(TextureTable, texture->alias);
     }
 }
 
@@ -65,7 +66,8 @@ void TextureManager::InternalCreateTexture(Texture* texture, const bool isManage
         TextureManager::InternalUploadTexture(texture, data, internalFormat, format);
     }
 
-    texture->alias = TextureTable.Insert(alias, texture, isManaged);
+    texture->alias = HashTable_insert(TextureTable, alias, texture);
+    
     texture->references++;
 
 }
@@ -92,7 +94,6 @@ void TextureManager::CreateRawTexture(const char* path, Texture* texture, GLenum
 
 }
 
-
 Texture* CreateTexture(const char* path, const char* alias, GLenum internalFormat, GLenum format, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
     /* This function creates a new texture from the file path and the alias. if the texture already exists in memory, the returned value will be that one.
     This will hopefully save delectably scrumptious graphics memory mmmhh. If an alias is not provided, the texture will use it's path as an alias. */
@@ -105,7 +106,7 @@ Texture* CreateTexture(const char* path, const char* alias, GLenum internalForma
     else { aliasUsed = const_cast<char*>(alias); }
 
     // try to find the texture in the table.
-    TextureTable.Find(aliasUsed, texture);
+    HashTable_find(TextureTable, aliasUsed, &texture);
 
     // if the texture doesn't already exist, make a new one, and return that instead.
     if (texture != nullptr) {
@@ -136,10 +137,10 @@ Texture* CreateTexture(const char* path, const char* alias, GLenum internalForma
 Texture* CreateCubemapTexture(const char* texturePaths[6], const char* alias, GLenum internalFormat, GLenum format, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
 
     Texture* texture = nullptr;
-    TextureTable.Find(alias, texture);
+    HashTable_find(TextureTable, alias, &texture);
 
     // if the texture doesn't already exist, make a new one, and return that instead.
-    if (texture != nullptr) {
+    if (!texture) {
         return texture;
     }
      
@@ -174,9 +175,9 @@ void DeleteTexture(const char* alias) {
         return;
     }
 
-    TextureTable.Find(alias, texture);
+    HashTable_find(TextureTable, alias, &texture);
 
-    if (texture == nullptr) {
+    if (!texture) {
         std::cout << "Error deleting Texture: \"" << alias << "\". No Texture with that name found. " << std::endl;
         return;
     }
@@ -189,20 +190,20 @@ void DereferenceTextures() {
     /* Call this function at the end of your program to ensure all tracked textures are properly cleaned up. */
 
     // Iterate through all the positions in the hash table.
-    for (uint64_t i = 0; i < TextureTable.Size; i++) {
+    for (uint64_t i = 0; i < TextureTable->Size; i++) {
 
         // Check if there is a value stored here:
-        if (TextureTable.Array[i].Key == nullptr) {
+        if (TextureTable->Array[i].Key == NULL) {
             continue;
         }
 
-        Texture* texture = TextureTable.Array[i].Value;
+        Texture* texture = (Texture*)TextureTable->Array[i].Value;
 
         // Forcefully clear the memory for all textures marked as managed.
-        if (TextureTable.Array[i].isManaged) {
-            std::cout << "Texture Manager: Freeing texture, \"" << texture->alias << "\"." << std::endl;
-            texture->references = 1;
-            TextureManager::InternalDeleteTexture(texture);
-        }
+        texture->references = 1;
+        TextureManager::InternalDeleteTexture(texture);
     }
+
+    HashTable_destroy(&TextureTable);
+
 }

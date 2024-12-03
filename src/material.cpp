@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "gl_parse_shader.h"
-#include "hashTable.h"
+#include "hash_table.h"
 #include "material.h"
 #include "texture.h"
 
@@ -99,7 +99,7 @@ void SetTextureFromAlias(const Material* material, const char* alias, uint16_t i
     }
 
     Texture* texture = nullptr;
-    TextureManager::FindTexture(alias, texture);
+    TextureManager::FindTexture(alias, &texture);
 
     if (texture == nullptr) {
         std::cout << "Error setting Material Texture: \"" << alias << "\" At index: " << index << ". The texture could not be found." << std::endl;

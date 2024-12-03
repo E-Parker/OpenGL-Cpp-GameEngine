@@ -10,7 +10,7 @@
 #include <cstring>
 
 #include "vectorMath.h"
-#include "hashTable.h"
+#include "hash_table.h"
 #include "cStringUtilities.h"
 #include "camera.h"
 #include "texture.h"
@@ -23,7 +23,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-static HashTable<Font> FontTable(64);
+static HashTable* FontTable = HashTable_create(Font, 32);
 
 #define DEFAULT_START_CHARACTER 31
 
@@ -82,7 +82,7 @@ Font* FontManager::InternalLoadFont(const char* path, Material* material, const 
         return nullptr;
     }
     
-    uint32_t atlasSize = Pow2Ceiling((uint32_t)(pointSize * sqrt((double)(fontInfo.numGlyphs))));
+    uint32_t atlasSize = Pow2Ceiling(uint32_t, (uint32_t)(pointSize * sqrt((double)(fontInfo.numGlyphs))));
 
     Font* font = new Font(material, fontInfo.numGlyphs, atlasSize);
     font->FontSize = pointSize;
@@ -107,10 +107,10 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
     Font* font = nullptr;
 
     // try to find the font in the table.
-    FontTable.Find(alias, font);
+    HashTable_find(FontTable, alias, &font);
 
     // if the font doesn't already exist, make a new one, and return that instead.
-    if (font != nullptr) {
+    if (font) {
         return font;
     }
 
@@ -124,7 +124,7 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
     }
 
     // Reference the key in font struct for faster insertions.
-    font->alias = FontTable.Insert(alias, font);
+    font->alias = HashTable_insert(FontTable, alias, font);
 
     return font;
 
@@ -140,15 +140,17 @@ void DeleteFont(const char* alias) {
         return;
     }
 
-    FontTable.Find(alias, font);
+    // try to find the font in the table.
+    HashTable_find(FontTable, alias, &font);
 
-    if (font == nullptr) {
+    // if the font doesn't already exist, make a new one, and return that instead.
+    if (!font) {
         std::cout << "Error deleting Font: \"" << alias << "\". No font with that name found. " << std::endl;
         return;
     }
 
     if (--font->references == 0) {
-        FontTable.Delete(alias);
+        HashTable_remove(FontTable, alias);
     }
 }
 
@@ -157,20 +159,16 @@ void DereferenceFonts() {
     /* Call this function at the end of your program to ensure all tracked textures are properly cleaned up. */
 
     // Iterate through all the positions in the hash table.
-    for (uint64_t i = 0; i < FontTable.Size; i++) {
+    for (uint64_t i = 0; i < FontTable->Size; i++) {
 
         // Check if there is a value stored here:
-        if (FontTable.Array[i].Key == nullptr) {
+        if (FontTable->Array[i].Key == nullptr) {
             continue;
         }
 
-        Font* font = FontTable.Array[i].Value;
+        Font* font = (Font*)FontTable->Array[i].Value;
 
-        // Forcefully clear the memory for all textures marked as managed.
-        if (FontTable.Array[i].isManaged) {
-            std::cout << "Font Manager: Freeing texture, \"" << font->alias << "\"." << std::endl;
-            FontTable.Delete(font->alias);
-        }
+        HashTable_remove(FontTable, font->alias);
     }
 }
 
@@ -200,7 +198,7 @@ void DrawTextMesh(const TextRender* textRender, const Camera* camera, const doub
         textRender->font->material != nullptr );
 
     if(!validTextRender) {
-        std::cout << "failed to draw text" << std::endl;
+        //std::cout << "failed to draw text" << std::endl;
         return;
     }
 
@@ -353,11 +351,11 @@ void SetFont(TextRender* textRender, const char* fontName, Font* defaultFont) {
         textRender->font = nullptr;
     }
 
-    Font* font = nullptr;
+    Font* font;
 
-    FontTable.Find(fontName, font);
+    HashTable_find(FontTable, fontName, &font);
 
-    if (font != nullptr) {        
+    if (font) {
         textRender->font = font;
         font->references++;
         return;

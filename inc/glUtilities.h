@@ -37,8 +37,6 @@ struct InstanceInformation {
     std::vector<TerminateFunction> TerminationFunctions;
 };
 
-static InstanceInformation internalInstanceInfo;
-
 void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam);
 GLFWwindow* Initialize(const int width, const int height, const char* tittle);
 
