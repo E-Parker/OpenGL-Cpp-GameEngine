@@ -5,9 +5,6 @@ extern "C" {
 #endif
 
 #include <glad/glad.h>
-#include <cStringUtilities.h>
-
-
 
 typedef struct UniformInformation {
     bool isBuffer;
@@ -37,12 +34,11 @@ typedef struct UniformBuffer {
 UniformBuffer* UniformBuffer_create(const UniformInformation* info, const uint64_t size);
 void UniformBuffer_destroy(UniformBuffer** buffer);
 void internal_UniformBuffer_set_region(const UniformBuffer* buffer, const uint64_t byteIndex, const uint64_t regionSizeInBytes, const void* data);
-void internal_UniformBuffer_set_all(const UniformBuffer* buffer, const void* data);
+void UniformBuffer_set(const UniformBuffer* buffer, const void* data);
 void UniformBuffer_get(const char* alias, UniformBuffer** outVal);
 
-#define UniformBuffer_set_at(type, buffer, index, data) (internal_UniformBuffer_set_region(buffer, index, ((UniformBuffer*)buffer->Size) * buffer->Stride), data))
-#define UniformBuffer_set_region(type, buffer, fromIndex, toIndex, data) (internal_UniformBuffer_set_region(buffer, fromIndex, ((UniformBuffer*)buffer->Size) * (toIndex - fromIndex) * buffer->Stride), data))
-#define UniformBuffer_set_all(type, buffer, data)
+#define UniformBuffer_set_at(type, buffer, index, data) (internal_UniformBuffer_set_region(buffer, index, ((UniformBuffer*)buffer->Size) * buffer->Stride), data)
+#define UniformBuffer_set_region(type, buffer, fromIndex, toIndex, data) (internal_UniformBuffer_set_region(buffer, fromIndex, ((UniformBuffer*)buffer->Size) * (toIndex - fromIndex) * buffer->Stride), data)
 
 //  SHADER UNIFORM
 //

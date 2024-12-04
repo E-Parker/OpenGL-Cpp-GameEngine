@@ -1,8 +1,8 @@
 #include <stdlib.h>
-
-#include "assert.h"
-#include "cStringUtilities.h"
+#include <assert.h>
+#include <string.h>
 #include "hash_table.h"
+#include "cStringUtilities.h"
 
 uint64_t internal_Pow2Ceiling(uint64_t size, uint64_t num) {
     /* This function returns the next nearest power of 2 from the input number. */

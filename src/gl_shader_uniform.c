@@ -113,7 +113,7 @@ void internal_UniformBuffer_set_region(const UniformBuffer* buffer, const uint64
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
 }
 
-void internal_UniformBuffer_set_all(const UniformBuffer* buffer, const void* data) {
+void UniformBuffer_set(const UniformBuffer* buffer, const void* data) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer->BufferObject);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, buffer->Size, data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
@@ -159,6 +159,8 @@ Shader* Shader_create(const GLuint program, const char* alias) {
     UniformInformation* uniforms = internal_Program_uniform_parse(program);
 
     // Something went wrong and padding needs to be added to one of these.
+    // Don't fuck with either of these. If you are, please keep the layout as similar as possible,
+    // and do not move isBuffer from the first index. it determines what cast is used.
     assert(sizeof(Uniform) == sizeof(UniformBuffer));
     
     size_t UniformArraySize = uniformCount * sizeof(Uniform*);
@@ -177,11 +179,9 @@ Shader* Shader_create(const GLuint program, const char* alias) {
     shader->Lookup = (uint64_t*)((char*)shader + sizeof(Shader) + UniformArraySize);
 
     for(GLint i = 0; i < uniformCount; i++) {
-        switch(uniforms[i].isBuffer) {
-        case true: shader->Uniforms[i] = UniformBuffer_create(&uniforms[i], 1); break;
-        case false: shader->Uniforms[i] = internal_Uniform_create(&uniforms[i]); break;
-        default: shader->Uniforms[i] = NULL; break;
-        }
+        // The cast to Uniform* regardless of actual type. the layout is the same for the parts that matter.
+        if (uniforms[i].isBuffer)   { shader->Uniforms[i] = (Uniform*)UniformBuffer_create(&uniforms[i], 1); }
+        else                        { shader->Uniforms[i] = internal_Uniform_create(&uniforms[i]); }
     }
 
     // Generate the lookup for the data.
@@ -301,7 +301,7 @@ void Shader_set_uniformBuffer(const Shader* shader, const char* alias, void* dat
     Shader_get_uniformBuffer(shader, alias, &uniform);
 
     if (uniform != NULL) {
-        UniformBuffer_set_all(uniform, data);
+        UniformBuffer_set(uniform, data);
     }
 }
 
