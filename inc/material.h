@@ -1,7 +1,7 @@
 #pragma once
 
 //Forward Declarations
-typedef struct HashTable;
+struct HashTable;
 struct Texture;
 
 typedef struct Material {

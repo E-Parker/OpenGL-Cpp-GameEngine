@@ -26,12 +26,32 @@ void InitShaders() {
 }
 
 void DereferenceShaders() {
+    // Function to dereference all shaders and shader objects. 
+    // After this is called, all functions will fail until InitShaders() is called again.
+    //
+
+    // Destroy the uniform buffers.
     for (uint64_t i = 0; i < StorageBufferTable->Size; i++) {
         if (StorageBufferTable->Array[i].Value) {
-            UniformBuffer_destroy(&(StorageBufferTable->Array[i].Value));
+            UniformBuffer_destroy((UniformBuffer**)&(StorageBufferTable->Array[i].Value));
         }
     }
 
+    // Destroy the shader programs.
+    for (uint64_t i = 0; i < ShaderProgramTable->Size; i++) {
+        if (ShaderProgramTable->Array[i].Value) {
+            Shader_destroy((Shader**)&(ShaderProgramTable->Array[i].Value));
+        }
+    }
+
+    // Destroy the shader programs.
+    //for (uint64_t i = 0; i < TextureTable->Size; i++) {
+    //    if (TextureTable->Array[i].Value) {
+    //        Texture_destroy((Texture**)&(TextureTable->Array[i].Value));
+    //    }
+    //}
+
+    // Now destroy the tables which store them. 
     HashTable_destroy(&ShaderProgramTable);
     HashTable_destroy(&StorageBufferTable);
 }

@@ -6,10 +6,6 @@
 extern "C" {
 #endif
 
-#define bool int
-#define true 1
-#define false 0
-
 const int size_from_gl_type(GLenum type);
 void upload_form_gl_type(GLint location, GLenum type, GLint elements, void* data);
 

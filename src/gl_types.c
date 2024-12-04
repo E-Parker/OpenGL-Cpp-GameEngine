@@ -1,5 +1,6 @@
 
 #include "gl_types.h"
+#include <stdbool.h>
 
 const int size_from_gl_type(const GLenum Type) {
     // I would like to not have a massive switch case but there isn't really a better way.
