@@ -25,10 +25,12 @@ int main(void) {
     
     // Initialize the window to the starting size and set the header.
     GLFWwindow* window = Initialize(SCREEN_WIDTH, SCREEN_HEIGHT, "Delta Render");
+    InitShaders();
     
     // Add termination functions to be executed at the end of the program.
     glUtilAddTerminationFunction(DereferenceFonts);
     glUtilAddTerminationFunction(DereferenceTextures);
+    glUtilAddTerminationFunction(DereferenceShaders);
     glUtilAddTerminationFunction(glfwTerminate);
     
     // Load Textures:
@@ -63,7 +65,6 @@ int main(void) {
     Shader* testShader = Shader_create(Mat0->Program, "TestShader");
     Uniform* mvpUniform;
     Shader_get_uniform(testShader, "u_mvp", &mvpUniform);
-
     Shader_set_uniform(testShader, "u_mvp", transform);
     
     int x = 0;

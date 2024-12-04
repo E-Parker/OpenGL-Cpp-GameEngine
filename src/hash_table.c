@@ -120,6 +120,7 @@ void HashTable_remove(HashTable* table, const char* key) {
 void HashTable_resize(HashTable* table, const uint64_t size) {
 
     HashTableItem* Temp = (HashTableItem*)calloc(size, sizeof(HashTableItem));
+    assert(Temp != NULL);
 
     for (uint64_t i = 0; i < table->Size; i++) {
 

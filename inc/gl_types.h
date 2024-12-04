@@ -39,7 +39,7 @@ typedef struct GLvec4f {
 } GLvec4f;
 
 
-
+/*
 typedef struct GLvec2d {
 	GLdouble X;
 	GLdouble Y;
@@ -57,7 +57,7 @@ typedef struct GLvec4d {
 	GLdouble Z;
 	GLdouble W;
 } GLvec4d;
-
+*/
 
 
 typedef struct GLvec2i {
@@ -77,7 +77,6 @@ typedef struct GLvec4i {
 	GLint Z;
 	GLint W;
 } GLvec4i;
-
 
 
 typedef struct GLvec2ui {
