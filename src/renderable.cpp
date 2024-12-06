@@ -139,18 +139,16 @@ void UploadSubMesh(Mesh* mesh, Mesh* source, const uint16_t* indeciesArray, cons
 }
 
 
-void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* transform, const GLfloat time) {
+void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* transform) {
     // Bind the material's shader program and textures.
 
     BindMaterial(material);
 
     // Get the uniform from the shader.
     GLint u_mvp = glGetUniformLocation(material->Program, "u_mvp");
-    GLint u_time = glGetUniformLocation(material->Program, "u_time");
 
     // Bind the VAO and draw the elements.
     glBindVertexArray(mesh->VertexAttributeObject);
-    glUniform1f(u_time, time);
     glUniformMatrix4fv(u_mvp, 1, GL_FALSE, ToFloat16(*transform).v);
     glDrawElements(GL_TRIANGLES, mesh->indexBytes, GL_UNSIGNED_SHORT, 0);
 

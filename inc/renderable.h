@@ -19,7 +19,7 @@ typedef struct Mesh {
 
 } Mesh;
 
-void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* transform, const GLfloat time);
+void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* transform);
 void FreeMesh(Mesh* mesh);
 void FreeSubMesh(Mesh* mesh);
 void UploadMesh(Mesh* mesh, const  uint16_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const Vector2* tCoordArray, const  size_t indecies, const size_t vertecies);

@@ -46,7 +46,7 @@ int main(void) {
     SetTextureFromAlias(Mat0, "MissingTexture", 0);
     
     // Load Font:
-    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 14.0f);
+    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 12.0f);
     
     
     // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
@@ -64,20 +64,20 @@ int main(void) {
 
     Shader* testShader = Shader_create(Mat0->Program, "TestShader");
     Uniform* mvpUniform;
-    Shader_get_uniform(testShader, "u_mvp", &mvpUniform);
-    Shader_set_uniform(testShader, "u_mvp", transform);
     
     int x = 0;
     //Uniform_set_data(mvpUniform, transform);
     int y = 0;
+    GLfloat time;
     
-    Matrix* data = Uniform_get_data(Matrix, mvpUniform);
+    //Matrix* data = Uniform_get_data(Matrix, mvpUniform);
     
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
         
         // FRAME STARTS HERE
         glUtilInitializeFrame(window);
+        time = (GLfloat)Time();
 
         if (IsKeyPressed(GLFW_KEY_UP)) {
             y++;
@@ -96,12 +96,18 @@ int main(void) {
         }
 
         mainCamera->Update(mainCamera, DeltaTime(), AspectRatio());
-     
-        mesh->Draw(mainCamera, (GLfloat)Time());
-       
-        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 1.0f);
-        DrawTextMesh(testText, mainCamera, AspectRatio(), (GLfloat)Time());
         
+        float16 cameraView = ToFloat16(mainCamera->ViewMatrix);
+
+        UniformBuffer_set_Global("FrameData", "u_camera", &cameraView.v);
+        UniformBuffer_set_Global("FrameData", "u_time", &time);
+
+        UniformBuffer_update_all();
+
+        mesh->Draw();
+       
+        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 4.0f);
+        DrawTextMesh(testText, mainCamera, AspectRatio());
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

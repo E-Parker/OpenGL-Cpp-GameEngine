@@ -19,7 +19,7 @@ struct StaticMesh {
     ~StaticMesh();
 
     void SetMaterial(Material* material, uint16_t index);
-    void Draw(Camera* camera, GLfloat time) const;
+    void Draw() const;
 
 };
 

@@ -173,7 +173,6 @@ bool internal_HashTable_find(const HashTable* table, const char* key, void** out
             return false;
         }
     }
-    assert(outValue != NULL);
     *outValue = table->Array[hash].Value;
     return true;
 }

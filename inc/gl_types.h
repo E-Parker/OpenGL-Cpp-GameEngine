@@ -5,9 +5,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+	
+#include <stdint.h>
 
-const int size_from_gl_type(GLenum type);
-void upload_form_gl_type(GLint location, GLenum type, GLint elements, void* data);
+const uint64_t size_from_gl_type(GLenum type);
+void upload_from_gl_type(GLint location, GLenum type, GLint elements, void* data);
 
 
 // Define analogues for all GLSL types not specified by glad.
@@ -114,7 +116,7 @@ typedef struct GLvec4b {
 
 
 typedef struct GLmat2f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -125,7 +127,7 @@ typedef struct GLmat2f {
 } GLmat2f;
 
 typedef struct GLmat2x3f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -139,7 +141,7 @@ typedef struct GLmat2x3f {
 } GLmat2x3f;
 
 typedef struct GLmat2x4f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -156,7 +158,7 @@ typedef struct GLmat2x4f {
 } GLmat2x4f;
 
 typedef struct GLmat3f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -173,7 +175,7 @@ typedef struct GLmat3f {
 } GLmat3f;
 
 typedef struct GLmat3x2f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -186,7 +188,7 @@ typedef struct GLmat3x2f {
 } GLmat3x2f;
 
 typedef struct GLmat3x4f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -207,7 +209,7 @@ typedef struct GLmat3x4f {
 } GLmat3x4f;
 
 typedef struct GLmat4f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -232,7 +234,7 @@ typedef struct GLmat4f {
 } GLmat4f;
 
 typedef struct GLmat4x2f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -247,7 +249,7 @@ typedef struct GLmat4x2f {
 } GLmat4x2f;
 
 typedef struct GLmat4x3f {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLfloat m0;
 	GLfloat m1;
@@ -269,7 +271,7 @@ typedef struct GLmat4x3f {
 
 /*
 typedef struct GLmat2d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -280,7 +282,7 @@ typedef struct GLmat2d {
 } GLmat2d;
 
 typedef struct GLmat2x3d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -294,7 +296,7 @@ typedef struct GLmat2x3d {
 } GLmat2x3d;
 
 typedef struct GLmat2x4d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -311,7 +313,7 @@ typedef struct GLmat2x4d {
 } GLmat2x4d;
 
 typedef struct GLmat3d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -328,7 +330,7 @@ typedef struct GLmat3d {
 } GLmat3d;
 
 typedef struct GLmat3x2d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -341,7 +343,7 @@ typedef struct GLmat3x2d {
 } GLmat3x2d;
 
 typedef struct GLmat3x4d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -362,7 +364,7 @@ typedef struct GLmat3x4d {
 } GLmat3x4d;
 
 typedef struct GLmat4d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -387,7 +389,7 @@ typedef struct GLmat4d {
 } GLmat4d;
 
 typedef struct GLmat4x2d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;
@@ -402,7 +404,7 @@ typedef struct GLmat4x2d {
 } GLmat4x2d;
 
 typedef struct GLmat4x3d {
-	GLboolean transpose;
+	//GLboolean transpose;
 
 	GLdouble m0;
 	GLdouble m1;

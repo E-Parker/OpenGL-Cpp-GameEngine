@@ -60,18 +60,16 @@ void StaticMesh::SetMaterial(Material* material, uint16_t index) {
 
 
 
-void StaticMesh::Draw(Camera* camera, GLfloat time) const {
+void StaticMesh::Draw() const {
     /* function to draw a mesh on screen. */
 
     if (this == nullptr) {
         return;
     }
 
-    Matrix mvp = Transform * camera->ViewMatrix;
-
     // run a draw call for each material.
     for (uint16_t i = 0; i < MaterialCount; i++) {
-        DrawRenderable(&meshRenders[i], materials[i], &mvp, time);
+        DrawRenderable(&meshRenders[i], materials[i], &Transform);
     }
 }
 

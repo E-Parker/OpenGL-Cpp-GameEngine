@@ -188,7 +188,7 @@ TextRender::~TextRender() {
     textMesh = nullptr;
 }
 
-void DrawTextMesh(const TextRender* textRender, const Camera* camera, const double aspectRatio, const GLfloat time) {
+void DrawTextMesh(const TextRender* textRender, const Camera* camera, const double aspectRatio) {
     /* Draw text to the screen. */
 
     // if the textRender is invalid, leave early without drawing anything.
@@ -203,8 +203,8 @@ void DrawTextMesh(const TextRender* textRender, const Camera* camera, const doub
     }
 
     // Calculate the projection. in this case its just an Orthographic projection to show up in screen-space.
-    Matrix mvp = MatrixIdentity() * Ortho(-aspectRatio, aspectRatio, -1.0, 1.0, 1.0, -1.0);
-    DrawRenderable(textRender->textMesh, textRender->font->material, &mvp, time);
+    Matrix mvp = MatrixIdentity();
+    DrawRenderable(textRender->textMesh, textRender->font->material, &mvp);
 
 }
 

@@ -54,7 +54,7 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
 static void DeleteFont(const char* alias);
 
 void DereferenceFonts();
-void DrawTextMesh(const TextRender* textRender, const Camera* camera, const double aspectRatio, const GLfloat time);
+void DrawTextMesh(const TextRender* textRender, const Camera* camera, const double aspectRatio);
 
 void SetFont(TextRender* textRender, const char* fontName, Font* defaultFont = nullptr);
 void SetText(TextRender* textRender, const char* string, int x, int y, const float windowWidth, const float windowHeight, const float size);

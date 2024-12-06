@@ -64,7 +64,7 @@ namespace ObjectType {
 }
 
 
-void SetAlias(void* gameObject, const char* string); 
+void SetAlias(void* gameObject, const char* string);
 Matrix GetGlobalTransform(void* gameObject); 
 
 

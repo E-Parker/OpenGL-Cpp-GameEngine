@@ -56,54 +56,39 @@ void DereferenceShaders() {
     HashTable_destroy(&StorageBufferTable);
 }
 
-UniformBuffer* UniformBuffer_create(const UniformInformation* info, const uint64_t size) {
-    // Returns a pointer to a UniformBuffer object.
-    //
-    //
-
-    if (!info->isBuffer) {
-        // Cannot create a uniformBuffer from a uniform!!
-        return NULL;
-    }
-
-    assert(StorageBufferTable != NULL);
-
-    // Attempt to locate the storage buffer in the HashTable. if it already exists and is bound, return it. 
-    // Otherwise generate a new buffer.
-
-    UniformBuffer* newBuffer;
-    HashTable_find(StorageBufferTable, info->Alias, &newBuffer);
-
-    if (newBuffer != NULL) {
-        return newBuffer;
-    }
-    
-    newBuffer = (UniformBuffer*)malloc(sizeof(UniformBuffer));
-    assert(newBuffer != NULL);
-    
- 
-    newBuffer->Alias = info->Alias;
-    newBuffer->AliasEnd = info->AliasEnd;
-    newBuffer->isBuffer = true;
-    newBuffer->Size = size;
-    newBuffer->BindingIndex = BufferCount++;
-
-    glGenBuffers(1, &(newBuffer->BufferObject));
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, newBuffer->BufferObject);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, newBuffer->BufferObject, NULL, GL_STATIC_DRAW);          // write null into the buffer to initialize it.
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, newBuffer->BindingIndex, newBuffer->BufferObject);   // set the binding index. This allows for multiple shaders to access the same region.
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
-    
-    // Insert the storage buffer into the table for retrieval upon recurrence. 
-    HashTable_insert(StorageBufferTable, info->Alias, newBuffer);
-
-    return newBuffer;
-}
-
 void UniformBuffer_destroy(UniformBuffer** buffer) {
+
+    if (!(*buffer)) {
+        return;
+    }
+
+    if (--(*buffer)->References != 0) {
+        return;
+    }
+
+    if (!(*buffer)->Uniforms) {
+        return;
+    }
+
     glDeleteBuffers(1, &((*buffer)->BufferObject));
+
+    for (HashTable_array_itterator((*buffer)->Uniforms)) {
+        Uniform* uniform = HashTable_array_at(Uniform, (*buffer)->Uniforms, i);
+        if (uniform) {
+            free(uniform->Alias);
+        }
+    }
+
+    // Call destroy first since removing from the global table will incorrectly destroy the object.
+    HashTable_destroy(&(*buffer)->Uniforms);
     free((*buffer)->Alias);
-    free(*buffer);
+    
+    // DO NOT CALL FREE. Removing it from the global table will handle that. 
+    //free(*buffer);
+    
+    // Now that it's been cleaned up, try to remove it from the global table to avoid deleting twice.
+    HashTable_remove(StorageBufferTable, (*buffer)->Alias);
+
     *buffer = NULL;
 }
 
@@ -113,106 +98,113 @@ void internal_UniformBuffer_set_region(const UniformBuffer* buffer, const uint64
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
 }
 
-void UniformBuffer_set(const UniformBuffer* buffer, const void* data) {
+void internal_UniformBuffer_set_all(const UniformBuffer* buffer, const void* data) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer->BufferObject);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, buffer->Size, data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
 }
 
-void UniformBuffer_get(const char* alias, UniformBuffer** outVal) {
+
+void internal_UniformBuffer_set(const UniformBuffer* buffer, const char* alias, void* data) {
+    // set the value of an item in a buffer by its variable name.
+
+    if (!buffer) {
+        return;
+    }
+
+    Uniform* uniform;
+    UniformBuffer_get_Uniform(buffer, alias, &uniform);
+
+    if (uniform) {
+        Uniform_set_data(uniform, data);
+    }
+}
+
+void UniformBuffer_get_Uniform(const UniformBuffer* buffer, const char* alias, Uniform** outVal) {
+    // Get an item in a buffer by its variable name.
+    HashTable_find(buffer->Uniforms, alias, outVal);
+}
+
+UniformBuffer* UniformBuffer_get_self(const char* alias) {
     // Simple wrapper function to access the StorageBufferTable.
     assert(StorageBufferTable);
-    HashTable_find(StorageBufferTable, alias, outVal);
+    UniformBuffer* outVal;
+    HashTable_find(StorageBufferTable, alias, &outVal);
+    return outVal;
+}
+
+void UniformBuffer_update_all() {
+    // Upload all uniform buffers.
+
+    for (HashTable_array_itterator(StorageBufferTable)) {
+        UniformBuffer* buffer = HashTable_array_at(UniformBuffer, StorageBufferTable, i);
+        if (buffer) {
+            internal_UniformBuffer_set_all(buffer, UniformBuffer_get_shared(buffer));
+        }
+    }
+}
+
+Uniform* internal_UniformBuffer_item_create(const UniformInformation* info, void* sharedBuffer) {
+    // Initialize a Uniform that is a part of a buffer. These uniforms use a shared buffer.
+
+    // Get the byte size of the type.
+    uint64_t size = size_from_gl_type(info->Type);
+
+    // allocate enough space for the Uniform header + the space required to store it's data. 
+    Uniform* newUniform = (Uniform*)malloc(sizeof(Uniform));
+    assert(newUniform != NULL);
+    assert(info->BlockOffset != -1);
+    newUniform->Data = (void*)(((uint8_t*)sharedBuffer) + info->BlockOffset);
+    newUniform->UniformType = UNIFORM_TYPE_BUFFER_ITEM;
+    newUniform->Alias = info->Alias;
+    newUniform->AliasLength = info->AliasLength;
+    newUniform->Size = size;
+    newUniform->Elements = info->Elements;
+    newUniform->Type = info->Type;
+    newUniform->Offset = info->BlockOffset;
+
+    return newUniform;
 }
 
 Uniform* internal_Uniform_create(const UniformInformation* info) {
     // Internal function to initialize a Uniform* 
+    // 
+    //
     
-    if (info->isBuffer) {
-        // Cannot create a uniform from a uniform buffer!!
-        return NULL;
-    }
-
-    assert(info->Elements != 0);
-
     // Get the byte size of the type.
-    int size = size_from_gl_type(info->Type);
+    uint64_t size = size_from_gl_type(info->Type);
 
     // allocate enough space for the Uniform header + the space required to store it's data. 
-    Uniform* newUniform = (Uniform*)calloc(1, sizeof(Uniform) + (size * info->Elements));
+    Uniform* newUniform = (Uniform*)malloc(sizeof(Uniform));
     assert(newUniform != NULL);
 
-    newUniform->isBuffer = false;
+    newUniform->Data = calloc(size,info->Elements);
+    newUniform->UniformType = UNIFORM_TYPE_SINGLE;
     newUniform->Alias = info->Alias;
-    newUniform->AliasEnd = info->AliasEnd;
+    newUniform->AliasLength = info->AliasLength;
     newUniform->Size = size;
     newUniform->Elements = info->Elements;
     newUniform->Type = info->Type;
+    newUniform->Offset = info->BlockOffset;
 
     return newUniform;
 }
 
 Shader* Shader_create(const GLuint program, const char* alias) {
     /* create a new shader, populate the fields and return a pointer to it. */
-
     GLint uniformCount = internal_Program_uniform_count(program);
-    UniformInformation* uniforms = internal_Program_uniform_parse(program);
+    GLint bufferCount = internal_Program_buffer_count(program);
+    GLint uniformCountTotal = uniformCount + bufferCount;
 
-    // Something went wrong and padding needs to be added to one of these.
-    // Don't fuck with either of these. If you are, please keep the layout as similar as possible,
-    // and do not move isBuffer from the first index. it determines what cast is used.
-    assert(sizeof(Uniform) == sizeof(UniformBuffer));
-    
-    size_t UniformArraySize = uniformCount * sizeof(Uniform*);
-    size_t UniformLookupSize = uniformCount * sizeof(uint64_t);
-    size_t shaderAlocationSize = sizeof(Shader) + UniformArraySize + UniformLookupSize;
-
-    // Just in case there's any alignment issues, ensure the block is padded to be exactly a multiple of four.
-    shaderAlocationSize += shaderAlocationSize % 4;
-
-    // Allocate the shader and it's buffers.
-    Shader* shader = (Shader*)malloc(shaderAlocationSize);
+    // Allocate the shader.
+    Shader* shader = (Shader*)calloc(1, sizeof(Shader));
     assert(shader != NULL);
 
-    // Store the Uniforms and Lookup as direct offsets into the same memory block.
-    shader->Uniforms = (Uniform**)((char*)shader + sizeof(Shader));
-    shader->Lookup = (uint64_t*)((char*)shader + sizeof(Shader) + UniformArraySize);
-
-    for(GLint i = 0; i < uniformCount; i++) {
-        // The cast to Uniform* regardless of actual type. the layout is the same for the parts that matter.
-        if (uniforms[i].isBuffer)   { shader->Uniforms[i] = (Uniform*)UniformBuffer_create(&uniforms[i], 1); }
-        else                        { shader->Uniforms[i] = internal_Uniform_create(&uniforms[i]); }
-    }
-
-    // Generate the lookup for the data.
-    memset(shader->Lookup, 0xFF, uniformCount * sizeof(uint64_t));
-    // ^^^ 0xFF is a safe assumption because the maximum uniforms OpenGL can handle is 1024.
-    
-    for(GLint i = 0; i < uniformCount; i++) {
-        Uniform* uniform = shader->Uniforms[i];
-        
-        if (!uniform) {
-            continue;
-        }
-
-        // Shut up MSVC!!! oh my god! its literally impossible for the uniform to be NULL! FUCK OFF!
-        uint64_t hash = fnvHash64(uniform->Alias, uniform->AliasEnd) % uniformCount;
-        uint16_t originalHash = hash;
-
-        // linearly probe for an open spot.
-        while (shader->Lookup[hash] < uniformCount) {
-            hash++;
-            hash %= uniformCount;
-
-            if(hash == originalHash) {
-                assert(false);
-            }
-        }
-
-        // set the lookup value so the array of Uniforms can be kept in order.
-        // When accessing uniforms by alias, do the hash table lookup to get the index of the uniform.
-        shader->Lookup[hash] = i;
-    }
+    shader->Uniforms = HashTable_create(Uniform, uniformCount);
+    shader->UniformBuffers = HashTable_create(UniformBuffer, bufferCount);
+   
+    internal_Program_uniform_parse(program, shader->Uniforms);
+    internal_Program_buffer_parse(program, shader->UniformBuffers);
 
     char* aliasEnd = FindBufferEnd(alias);
     uint64_t aliasLength = aliasEnd - alias + 1;
@@ -226,7 +218,6 @@ Shader* Shader_create(const GLuint program, const char* alias) {
     shader->Alias = shaderName;
     shader->AliasEnd = shaderName + aliasLength - 1;
     shader->Program = program;
-    shader->UniformCount = uniformCount;
 
     return shader;
 
@@ -238,14 +229,17 @@ void Shader_destroy(Shader** shader){
     glDeleteProgram((*shader)->Program);
     (*shader)->Program = GL_NONE;
 
-    for(GLuint i = 0; i < (*shader)->UniformCount; i++) {
-        Uniform* uniform = (*shader)->Uniforms[i];
-
-        // uniform buffers are handled externally.
-        if (!uniform->isBuffer) {
+    for (HashTable_array_itterator((*shader)->Uniforms)) {
+        Uniform* uniform = HashTable_array_at(Uniform, (*shader)->Uniforms, i);
+        if (uniform) {
             free(uniform->Alias);
-            free(uniform);
+            free(uniform->Data);
+            (*shader)->Uniforms->Array[i].Value = NULL;
         }
+    }
+
+    for (HashTable_array_itterator((*shader)->UniformBuffers)) {
+        UniformBuffer_destroy(&(UniformBuffer*)((*shader)->UniformBuffers->Array[i].Value));
     }
 
     free((*shader)->Alias);
@@ -253,34 +247,12 @@ void Shader_destroy(Shader** shader){
     *shader = NULL;
 }
 
-
-void internal_Shader_get_uniform(const Shader* shader, const char* alias, void** outVal) {
-    /* Get the reference to a Shader's Uniform by the variable name. */
-
-    char* aliasEnd = FindBufferEnd(alias);
-    uint64_t hash = fnvHash64(alias, aliasEnd) % shader->UniformCount;
-    uint16_t originalHash = hash;
-
-    // iterate through the lookup table until a match has been found.
-    while (strcmp(shader->Uniforms[shader->Lookup[hash]]->Alias, alias) != 0) {
-        hash++;
-        hash %= shader->UniformCount;
-
-        if(hash == originalHash) {
-            *outVal = NULL;
-            return;
-        }
-    }
-
-    *outVal = shader->Uniforms[shader->Lookup[hash]];
-}
-
 void Shader_get_uniform(const Shader* shader, const char* alias, Uniform** outVal) {
-    internal_Shader_get_uniform(shader, alias, (void**)outVal);
+    HashTable_find(shader->Uniforms, alias, outVal);
 }
 
 void Shader_get_uniformBuffer(const Shader* shader, const char* alias, UniformBuffer** outVal) {
-    internal_Shader_get_uniform(shader, alias, (void**)outVal);
+    HashTable_find(shader->UniformBuffers, alias, outVal);
 }
 
 void Shader_set_uniform(const Shader* shader, const char* alias, void* data) {
@@ -296,13 +268,9 @@ void Shader_set_uniform(const Shader* shader, const char* alias, void* data) {
 
 void Shader_set_uniformBuffer(const Shader* shader, const char* alias, void* data) {
     /* Set the value of a Shader's Uniform by the variable name. */
-
-    UniformBuffer* uniform;
-    Shader_get_uniformBuffer(shader, alias, &uniform);
-
-    if (uniform != NULL) {
-        UniformBuffer_set(uniform, data);
-    }
+    UniformBuffer* buffer;
+    Shader_get_uniformBuffer(shader, alias, &buffer);
+    UniformBuffer_set(buffer, alias, data);
 }
 
 void Shader_use(const Shader* shader) {
@@ -310,12 +278,13 @@ void Shader_use(const Shader* shader) {
     glUseProgram(shader->Program);
        
     // for each non-buffer uniform, upload it to the GPU.
-    for (GLint i = 0; i < shader->UniformCount; i++) {
-        if (!shader->Uniforms[i]->isBuffer) {
-            upload_form_gl_type(i, shader->Uniforms[i]->Type, shader->Uniforms[i]->Elements, Uniform_get_data(void, shader->Uniforms[i]));
+    for (uint64_t i = 0; i < Shader_get_uniform_count(shader); i++) {
+        Uniform* uniform = HashTable_array_at(Uniform, shader->Uniforms, i);
+        if (uniform != NULL) {
+            upload_from_gl_type(i, uniform->Type, uniform->Elements, Uniform_get_data(void, uniform));
         }
     }
-
+    
 
     // Set the active texture for each texture in the material.
     //for (uint16_t i = 0; i < material->TexturesUsed; i++) {
@@ -326,6 +295,24 @@ void Shader_use(const Shader* shader) {
     //}
 }
 
+GLint internal_Program_buffer_count(const GLuint program) {
+    
+    GLint* params = (GLint*)malloc(sizeof(GLint));
+
+    glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, params);
+
+    //glGetProgramiv(program, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, params);
+
+    if (params == NULL) {
+        // something has gone very wrong and the shader has no uniforms.
+        assert(false);
+    }
+
+    GLint uniformCount = *params;
+    free(params);
+
+    return uniformCount;
+}
 
 GLint internal_Program_uniform_count(const GLuint program) {
     // Get the number of uniforms.
@@ -344,32 +331,144 @@ GLint internal_Program_uniform_count(const GLuint program) {
     return uniformCount;
 }
 
-UniformInformation* internal_Program_uniform_parse(const GLuint program) {
-    // Function to parse out uniforms from a shader. Returns an array of struts containing uniform information. 
-    // Any uniform type should be able to be created from this.
+
+void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
+    //  Function to parse out uniform blocks from a shader. inserts them into the provided table, as well as the global table.
+    //
     //
 
-    GLint uniformCount = internal_Program_uniform_count(program);
-    UniformInformation* uniforms = (UniformInformation*)calloc(uniformCount, sizeof(UniformInformation));
-    GLint* indicies = (GLint*)malloc(uniformCount * sizeof(GLint));
-    GLint* blockIndexParams = (GLint*)malloc(uniformCount * sizeof(GLint));
-    GLint* blockOffsetParams = (GLint*)malloc(uniformCount * sizeof(GLint));
+    assert(StorageBufferTable != NULL);
 
-    assert(indicies != NULL);
-    assert(uniforms != NULL);
-    assert(blockIndexParams != NULL);
+    GLint bufferCount = internal_Program_buffer_count(program);
+    GLint binding;
+    GLint indicies;
+    GLint* uniformIndicies;
+    GLint aliasLength;
+    GLint size;
+    char* alias;
+
+    char* buffer = (char*)malloc(MAX_ALIAS_SIZE);
+    assert(buffer != NULL);
+
+    for (GLint i = 0; i < bufferCount; i++) {
+
+        // get the name of the uniform buffer:
+        //glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_NAME_LENGTH, &aliasLength);
+        
+        glGetActiveUniformBlockName(program, i, MAX_ALIAS_SIZE, &aliasLength, buffer);
+        alias = (char*)malloc(aliasLength + 1);
+        assert(alias != NULL);
+        memcpy(alias, buffer, aliasLength + 1);
+
+        UniformBuffer* newBuffer;
+        HashTable_find(StorageBufferTable, alias, &newBuffer);
+
+        // if it already exists, insert that one instead.
+        if (newBuffer) {
+            newBuffer->References++;
+            HashTable_insert(table, newBuffer->Alias, newBuffer);
+            free(alias);
+            continue;
+        }
+
+        // Otherwise, we need to fill out the other values and create a new buffer.
+        glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_BINDING, &binding);
+        glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
+        glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &indicies);
+
+        newBuffer = (UniformBuffer*)calloc(1, sizeof(UniformBuffer) + size);
+        assert(newBuffer != NULL);
+
+
+        newBuffer->Uniforms = HashTable_create(Uniform, indicies);
+        uniformIndicies = (GLint*)calloc(indicies, sizeof(GLint));
+        assert(uniformIndicies != NULL);
+        glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniformIndicies);
+
+        internal_Program_buffer_uniform_parse(program, indicies, uniformIndicies, newBuffer);
+
+        free(uniformIndicies);
+
+        newBuffer->Alias = alias;
+        newBuffer->AliasLength = aliasLength;
+        newBuffer->UniformType = UNIFORM_TYPE_BUFFER;
+        newBuffer->Size = size;
+        newBuffer->BindingIndex = binding;
+        newBuffer->References = 1;
+
+        glGenBuffers(1, &(newBuffer->BufferObject));
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, newBuffer->BufferObject);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, size, NULL, GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, newBuffer->BindingIndex, newBuffer->BufferObject);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
+
+        // Insert the buffer into the both the storage buffer table and the local table.
+        HashTable_insert(StorageBufferTable, alias, newBuffer);
+        HashTable_insert(table, alias, newBuffer);
+    }
+}
+
+static void internal_Program_buffer_uniform_parse(const GLuint program, const uint16_t uniformCount, const GLint* indicies, UniformBuffer* uniformBuffer) {
+
+    GLint* blockOffsetParams = (GLint*)malloc(uniformCount * sizeof(GLint));
     assert(blockOffsetParams != NULL);
 
-    for (GLint i = 0; i < uniformCount; i++) {
+    char* buffer = (char*)malloc(MAX_ALIAS_SIZE);
+    assert(buffer != NULL);
+    
+    glGetActiveUniformsiv(program, uniformCount, indicies, GL_UNIFORM_OFFSET, blockOffsetParams);
+
+    for (uint16_t i = 0; i < uniformCount; i++) {
+        
+        GLsizei length;
+        GLint elements;
+        GLenum type;
+        uint16_t CurrentOffset = 0;
+
+        glGetActiveUniform(program, indicies[i], MAX_ALIAS_SIZE, &length, &elements, &type, buffer);
+       
+        char* alias = (char*)malloc(length + 1);
+        assert(alias != NULL);
+        memcpy(alias, buffer, length + 1);
+
+        UniformInformation info = {alias, length + 1, UNIFORM_TYPE_BUFFER_ITEM, indicies[i], type, elements, blockOffsetParams[i]};
+        HashTable_insert(uniformBuffer->Uniforms, alias, internal_UniformBuffer_item_create(&info, UniformBuffer_get_shared(uniformBuffer)));
+    }
+
+    free(blockOffsetParams);
+    free(buffer);
+}
+
+void internal_Program_uniform_parse(const GLuint program, HashTable* table) {
+    // Function to parse out uniforms from a shader. Inserts the uniforms into the provided table.
+    //
+    //
+    
+    GLint uniformCount = internal_Program_uniform_count(program);
+    
+    GLint* blockOffsetParams = (GLint*)malloc(uniformCount * sizeof(GLint));
+    GLuint* indicies = (GLint*)malloc(uniformCount * sizeof(GLint));
+    Uniform** uniforms = (Uniform**)calloc(uniformCount, sizeof(Uniform*));
+
+    assert(blockOffsetParams != NULL);
+    assert(indicies != NULL);
+    assert(uniforms != NULL);
+
+    for(GLuint i = 0; i < uniformCount; i++ ) {
         indicies[i] = i;
     }
 
-    glGetActiveUniformsiv(program, uniformCount, indicies, GL_UNIFORM_BLOCK_INDEX, blockIndexParams);
+    glGetActiveUniformsiv(program, uniformCount, indicies, GL_UNIFORM_OFFSET, blockOffsetParams);
+    free(indicies);
 
     char* buffer = (char*)malloc(MAX_ALIAS_SIZE);
     assert(buffer != NULL);
 
     for (GLint i = 0; i < uniformCount; i++) {
+
+        if (blockOffsetParams[i] != -1) {
+            continue;
+        }
 
         GLsizei length;
         GLint elements;
@@ -381,18 +480,10 @@ UniformInformation* internal_Program_uniform_parse(const GLuint program) {
         assert(alias != NULL);
         memcpy(alias, buffer, length + 1);
 
-        uniforms[i].Alias = alias;
-        uniforms[i].AliasEnd = alias + length;
-        uniforms[i].Location = i;
-        uniforms[i].Elements = elements;
-        uniforms[i].BlockIndex = blockIndexParams[i];
-        uniforms[i].BlockOffset = blockOffsetParams[i];
+        UniformInformation info = { alias, length + 1, UNIFORM_TYPE_SINGLE, i, type, elements, -1 };
+        HashTable_insert(table, alias, internal_Uniform_create(&info));
     }
 
-    free(buffer);
-    free(indicies);
-    free(blockIndexParams);
     free(blockOffsetParams);
-
-    return uniforms;
+    free(buffer);
 }

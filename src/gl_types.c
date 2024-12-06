@@ -1,8 +1,9 @@
 
 #include "gl_types.h"
 #include <stdbool.h>
+#include <stdint.h>
 
-const int size_from_gl_type(const GLenum Type) {
+const uint64_t size_from_gl_type(const GLenum Type) {
     // I would like to not have a massive switch case but there isn't really a better way.
     // The API just does not have functionality for this since GLfloat and GLint are always assumed to be 
     // exactly the same as C / C++ standards. 
@@ -49,7 +50,7 @@ const int size_from_gl_type(const GLenum Type) {
     }
 }
 
-void upload_form_gl_type(GLint location, GLenum type, GLint elements, void* data) {
+void upload_from_gl_type(GLint location, GLenum type, GLint elements, void* data) {
     switch (type) {
     case GL_FLOAT: glUniform1f(location, *((GLfloat*)data)); break;
     case GL_FLOAT_VEC2: glUniform2f(location, ((GLvec2f*)data)->X, ((GLvec2f*)data)->Y); break;
@@ -71,14 +72,14 @@ void upload_form_gl_type(GLint location, GLenum type, GLint elements, void* data
     case GL_BOOL_VEC2: glUniform2i(location, ((GLvec2b*)data)->X, ((GLvec2b*)data)->Y); break;
     case GL_BOOL_VEC3: glUniform3i(location, ((GLvec3b*)data)->X, ((GLvec3b*)data)->Y, ((GLvec3b*)data)->Z); break;
     case GL_BOOL_VEC4: glUniform4i(location, ((GLvec4b*)data)->X, ((GLvec4b*)data)->Y, ((GLvec4b*)data)->Z, ((GLvec4b*)data)->W); break;
-    case GL_FLOAT_MAT2: glUniformMatrix2fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT2x3: glUniformMatrix2x3fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT2x4: glUniformMatrix2x4fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT3: glUniformMatrix3fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT3x2: glUniformMatrix3x2fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT3x4: glUniformMatrix3x4fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT4: glUniformMatrix4fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT4x2:glUniformMatrix4x2fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
-    case GL_FLOAT_MAT4x3: glUniformMatrix4x3fv(location, elements, *((bool*)data), (GLfloat*)(((bool*)data) + 1)); break;
+    case GL_FLOAT_MAT2: glUniformMatrix2fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT2x3: glUniformMatrix2x3fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT2x4: glUniformMatrix2x4fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT3: glUniformMatrix3fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT3x2: glUniformMatrix3x2fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT3x4: glUniformMatrix3x4fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT4: glUniformMatrix4fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT4x2:glUniformMatrix4x2fv(location, elements, false, (GLfloat*)data); break;
+    case GL_FLOAT_MAT4x3: glUniformMatrix4x3fv(location, elements, false, (GLfloat*)data); break;
     }
 }
