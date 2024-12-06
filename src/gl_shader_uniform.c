@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
@@ -155,6 +156,7 @@ Uniform* internal_UniformBuffer_item_create(const UniformInformation* info, void
     assert(info->BlockOffset != -1);
     newUniform->Data = (void*)(((uint8_t*)sharedBuffer) + info->BlockOffset);
     newUniform->UniformType = UNIFORM_TYPE_BUFFER_ITEM;
+    newUniform->Location = info->Location;
     newUniform->Alias = info->Alias;
     newUniform->AliasLength = info->AliasLength;
     newUniform->Size = size;
@@ -179,6 +181,7 @@ Uniform* internal_Uniform_create(const UniformInformation* info) {
 
     newUniform->Data = calloc(size,info->Elements);
     newUniform->UniformType = UNIFORM_TYPE_SINGLE;
+    newUniform->Location = info->Location;
     newUniform->Alias = info->Alias;
     newUniform->AliasLength = info->AliasLength;
     newUniform->Size = size;
@@ -290,10 +293,12 @@ void Shader_use(const Shader* shader) {
     glUseProgram(shader->Program);
        
     // for each non-buffer uniform, upload it to the GPU.
-    for (uint64_t i = 0; i < Shader_get_uniform_count(shader); i++) {
+    for (HashTable_array_itterator(shader->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, shader->Uniforms, i);
         if (uniform != NULL) {
-            upload_from_gl_type(i, uniform->Type, uniform->Elements, Uniform_get_data(void, uniform));
+            //printf("Uniform Location: %d", uniform->Location);
+            //printf("\t array location: %d %c", shader->Uniforms->ActiveIndicies[i], '\n');
+            upload_from_gl_type(uniform->Location, uniform->Type, uniform->Elements, Uniform_get_data(void, uniform));
         }
     }
     
@@ -457,7 +462,11 @@ void internal_Program_uniform_parse(const GLuint program, HashTable* table) {
     //
     
     GLint uniformCount = internal_Program_uniform_count(program);
-    
+    GLsizei length;
+    GLint location;
+    GLint elements;
+    GLenum type;
+
     GLint* blockOffsetParams = (GLint*)malloc(uniformCount * sizeof(GLint));
     GLuint* indicies = (GLint*)malloc(uniformCount * sizeof(GLint));
     Uniform** uniforms = (Uniform**)calloc(uniformCount, sizeof(Uniform*));
@@ -482,17 +491,20 @@ void internal_Program_uniform_parse(const GLuint program, HashTable* table) {
             continue;
         }
 
-        GLsizei length;
-        GLint elements;
-        GLenum type;
-
         glGetActiveUniform(program, i, MAX_ALIAS_SIZE, &length, &elements, &type, buffer);
+        location = glGetUniformLocation(program, buffer);
+
+        // Skip any Uniform which does not exist or is prefixed with "gl_"
+        if (location == -1) {
+            continue;
+        }
 
         char* alias = (char*)malloc(length + 1);
         assert(alias != NULL);
         memcpy(alias, buffer, length + 1);
 
-        UniformInformation info = { alias, length + 1, UNIFORM_TYPE_SINGLE, i, type, elements, -1 };
+
+        UniformInformation info = { alias, length + 1, UNIFORM_TYPE_SINGLE, location, type, elements, -1 };
         HashTable_insert(table, alias, internal_Uniform_create(&info));
     }
 

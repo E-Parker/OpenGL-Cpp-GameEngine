@@ -30,6 +30,9 @@ HashTable* internal_HashTable_create(uint64_t itemSize, uint64_t size) {
     table->Array = calloc(Size, sizeof(HashTableItem));
     assert(table->Array != NULL);
 
+    table->ActiveIndicies = calloc(Size, sizeof(uint64_t));
+    assert(table->ActiveIndicies != NULL);
+
     table->Size = Size;
     table->SlotsUsed = 0;
 
@@ -89,6 +92,10 @@ char* HashTable_insert(HashTable* table, const char* key, void* value) {
 
     memcpy(table->Array[hash].Key, key, keyEnd - key + 1);
     table->Array[hash].Value = value;
+
+   
+    table->ActiveIndicies[table->SlotsUsed - 1] = hash;
+
     return table->Array[hash].Key;
 }
 
@@ -105,6 +112,17 @@ void HashTable_remove(HashTable* table, const char* key) {
             free(table->Array[hash].Value);
             table->Array[hash].Key = NULL;
             table->Array[hash].Value = NULL;
+            
+            uint64_t i = 0;
+            for (; i < table->SlotsUsed; i++) {
+                if (table->ActiveIndicies[i] == hash) break;
+            }
+
+            for (uint64_t k = i + 1; k < table->SlotsUsed; k++) {
+                table->ActiveIndicies[k - 1] = table->ActiveIndicies[k];
+            }
+
+            table->SlotsUsed--;
             return;
         }
 
@@ -120,7 +138,9 @@ void HashTable_remove(HashTable* table, const char* key) {
 void HashTable_resize(HashTable* table, const uint64_t size) {
 
     HashTableItem* Temp = (HashTableItem*)calloc(size, sizeof(HashTableItem));
+    uint64_t* TempIndicies = (uint64_t*)calloc(size, sizeof(uint64_t));
     assert(Temp != NULL);
+    assert(TempIndicies != NULL);
 
     for (uint64_t i = 0; i < table->Size; i++) {
 
@@ -144,12 +164,18 @@ void HashTable_resize(HashTable* table, const uint64_t size) {
             }
         }
         // Store the item from the old array in the temp one.
+        table->ActiveIndicies[i] = hash;
         Temp[hash] = table->Array[i];
     }
 
+    free(table->ActiveIndicies);
+    table->ActiveIndicies = TempIndicies;
+    
     free(table->Array);
     table->Array = Temp;
+    
     Temp = NULL;
+    TempIndicies = NULL;
     table->Size = size;
 }
 

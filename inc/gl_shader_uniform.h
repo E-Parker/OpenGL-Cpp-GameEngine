@@ -20,8 +20,9 @@ typedef struct UniformGeneric {
     // Template body for any uniform type
     #define UNIFORM_BODY()\
     char* Alias;\
-    uint32_t AliasLength;\
-    uint32_t UniformType;\
+    uint16_t AliasLength;\
+    uint16_t UniformType;\
+    GLint Location;\
     
     UNIFORM_BODY()
     uint64_t padding0;
@@ -32,7 +33,6 @@ typedef struct UniformGeneric {
 typedef struct UniformInformation {
     // GENERIC DEFINITIONS:
     UNIFORM_BODY()
-    GLint Location;
     GLenum Type;
     GLint Elements;
 
@@ -47,7 +47,6 @@ typedef struct UniformInformation {
 
 typedef struct UniformSampler {
     UNIFORM_BODY()
-    uint16_t Location;
     uint16_t Type;
     uint16_t width;
     uint16_t height;

@@ -21,6 +21,7 @@ typedef struct HashTableItem {
 typedef struct HashTable {
     uint64_t Size;
     uint64_t SlotsUsed;
+    uint64_t* ActiveIndicies;
     HashTableItem* Array;
 } HashTable;
 
@@ -33,8 +34,8 @@ void HashTable_resize(HashTable* table, const uint64_t size);
 
 bool internal_HashTable_find(const HashTable* table, const char* alias, void** outValue);
 #define HashTable_find(table, alias, outValue) (internal_HashTable_find(table, alias, (void**)outValue))
-#define HashTable_array_itterator(table) uint64_t i = 0; i < table->Size; i++
-#define HashTable_array_at(T, table, i) ((T*)table->Array[i].Value)
+#define HashTable_array_itterator(table) uint64_t i = 0; i < table->SlotsUsed; i++
+#define HashTable_array_at(T, table, i) ((T*)table->Array[table->ActiveIndicies[i]].Value)
 
 #ifdef __cplusplus
 }

@@ -59,7 +59,7 @@ int main(void) {
     mesh->SetMaterial(Mat0, 0);
     Matrix* transform = GET_ASSET_TRANSFORM(mesh);
     
-    *transform = *transform * Translate(0.0f, 0.0f, -1.0f);
+    
 
     Camera* mainCamera = new Camera(NoClipCameraUpdate);
 
@@ -95,6 +95,7 @@ int main(void) {
         if (IsKeyPressed(GLFW_KEY_LEFT)) {
             x--;
         }
+        *transform = Translate(static_cast<float>(x), static_cast<float>(y), 0.0f);
 
         mainCamera->Update(mainCamera, DeltaTime(), AspectRatio());
         
