@@ -9,7 +9,7 @@ layout (std140) uniform FrameData {
     float u_time;
 };
 
-mat4 u_mvp;
+uniform mat4 u_mvp;
 out vec3 position;
 out vec3 normal;    
 out vec2 tcoord;
@@ -17,10 +17,11 @@ out float time;
 
 void main() {
     
-    position = aPosition;
+    position = (u_mvp * vec4(aPosition, 1.0)).xyz;
+
     normal = aNormal;
     tcoord = aTcoord;
     time = u_time;
-
-    gl_Position = u_mvp * u_camera * vec4(aPosition, 1.0);
+    mat4 test = u_mvp * u_camera;
+    gl_Position = u_camera * vec4(aPosition, 1.0);
 }

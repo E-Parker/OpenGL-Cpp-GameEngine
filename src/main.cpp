@@ -46,7 +46,7 @@ int main(void) {
     SetTextureFromAlias(Mat0, "MissingTexture", 0);
     
     // Load Font:
-    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 12.0f);
+    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 14.0f);
     
     
     // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
@@ -54,7 +54,8 @@ int main(void) {
     SetFont(testText, "DepartureMono", departureMono);
 
 
-    StaticMesh* mesh = CreateStaticMeshPrimativePlane(1, 1);
+    //StaticMesh* mesh = CreateStaticMeshPrimativePlane(1, 1);
+    StaticMesh* mesh = CreateStaticMeshFromWavefront("./assets/meshes/head.obj");
     mesh->SetMaterial(Mat0, 0);
     Matrix* transform = GET_ASSET_TRANSFORM(mesh);
     
@@ -64,9 +65,9 @@ int main(void) {
 
     Shader* testShader = Shader_create(Mat0->Program, "TestShader");
     Uniform* mvpUniform;
+    //Uniform_set_data(mvpUniform, transform);
     
     int x = 0;
-    //Uniform_set_data(mvpUniform, transform);
     int y = 0;
     GLfloat time;
     
@@ -104,9 +105,11 @@ int main(void) {
 
         UniformBuffer_update_all();
 
+        Shader_use(testShader);
+
         mesh->Draw();
        
-        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 4.0f);
+        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 22.0f);
         DrawTextMesh(testText, mainCamera, AspectRatio());
 
         /* Swap front and back buffers */

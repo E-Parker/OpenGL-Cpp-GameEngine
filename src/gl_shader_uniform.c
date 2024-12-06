@@ -13,14 +13,13 @@
 
 #define MAX_ALIAS_SIZE 512
 
-static uint16_t BufferCount = 0;
-static HashTable* StorageBufferTable = NULL;
+static HashTable* UniformBufferTable = NULL;
 static HashTable* ShaderProgramTable = NULL;
 static HashTable* TextureTable = NULL;
 static HashTable* ShaderCompilationTable = NULL;
 
 void InitShaders() {
-    StorageBufferTable = HashTable_create(UniformBuffer, 128);
+    UniformBufferTable = HashTable_create(UniformBuffer, 128);
     ShaderProgramTable = HashTable_create(Shader, 512);
     // TextureTable = HashTable_create(Texture, 512);
 }
@@ -31,9 +30,9 @@ void DereferenceShaders() {
     //
 
     // Destroy the uniform buffers.
-    for (uint64_t i = 0; i < StorageBufferTable->Size; i++) {
-        if (StorageBufferTable->Array[i].Value) {
-            UniformBuffer_destroy((UniformBuffer**)&(StorageBufferTable->Array[i].Value));
+    for (uint64_t i = 0; i < UniformBufferTable->Size; i++) {
+        if (UniformBufferTable->Array[i].Value) {
+            UniformBuffer_destroy((UniformBuffer**)&(UniformBufferTable->Array[i].Value));
         }
     }
 
@@ -53,7 +52,7 @@ void DereferenceShaders() {
 
     // Now destroy the tables which store them. 
     HashTable_destroy(&ShaderProgramTable);
-    HashTable_destroy(&StorageBufferTable);
+    HashTable_destroy(&UniformBufferTable);
 }
 
 void UniformBuffer_destroy(UniformBuffer** buffer) {
@@ -87,7 +86,7 @@ void UniformBuffer_destroy(UniformBuffer** buffer) {
     //free(*buffer);
     
     // Now that it's been cleaned up, try to remove it from the global table to avoid deleting twice.
-    HashTable_remove(StorageBufferTable, (*buffer)->Alias);
+    HashTable_remove(UniformBufferTable, (*buffer)->Alias);
 
     *buffer = NULL;
 }
@@ -126,18 +125,18 @@ void UniformBuffer_get_Uniform(const UniformBuffer* buffer, const char* alias, U
 }
 
 UniformBuffer* UniformBuffer_get_self(const char* alias) {
-    // Simple wrapper function to access the StorageBufferTable.
-    assert(StorageBufferTable);
+    // Simple wrapper function to access the UniformBufferTable.
+    assert(UniformBufferTable);
     UniformBuffer* outVal;
-    HashTable_find(StorageBufferTable, alias, &outVal);
+    HashTable_find(UniformBufferTable, alias, &outVal);
     return outVal;
 }
 
 void UniformBuffer_update_all() {
     // Upload all uniform buffers.
 
-    for (HashTable_array_itterator(StorageBufferTable)) {
-        UniformBuffer* buffer = HashTable_array_at(UniformBuffer, StorageBufferTable, i);
+    for (HashTable_array_itterator(UniformBufferTable)) {
+        UniformBuffer* buffer = HashTable_array_at(UniformBuffer, UniformBufferTable, i);
         if (buffer) {
             internal_UniformBuffer_set_all(buffer, UniformBuffer_get_shared(buffer));
         }
@@ -192,12 +191,21 @@ Uniform* internal_Uniform_create(const UniformInformation* info) {
 
 Shader* Shader_create(const GLuint program, const char* alias) {
     /* create a new shader, populate the fields and return a pointer to it. */
+
+    Shader* shader;
+    HashTable_find(ShaderProgramTable, alias, &shader);
+
+    if (shader) {
+        shader->References++;
+        return shader;
+    }
+
     GLint uniformCount = internal_Program_uniform_count(program);
     GLint bufferCount = internal_Program_buffer_count(program);
     GLint uniformCountTotal = uniformCount + bufferCount;
 
     // Allocate the shader.
-    Shader* shader = (Shader*)calloc(1, sizeof(Shader));
+    shader = (Shader*)calloc(1, sizeof(Shader));
     assert(shader != NULL);
 
     shader->Uniforms = HashTable_create(Uniform, uniformCount);
@@ -226,6 +234,10 @@ Shader* Shader_create(const GLuint program, const char* alias) {
 void Shader_destroy(Shader** shader){
     /* Free a shader allocated with CreateShader. */
     
+    if (--(*shader)->References != 0) {
+        return;
+    }
+
     glDeleteProgram((*shader)->Program);
     (*shader)->Program = GL_NONE;
 
@@ -337,7 +349,7 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
     //
     //
 
-    assert(StorageBufferTable != NULL);
+    assert(UniformBufferTable != NULL);
 
     GLint bufferCount = internal_Program_buffer_count(program);
     GLint binding;
@@ -361,7 +373,7 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
         memcpy(alias, buffer, aliasLength + 1);
 
         UniformBuffer* newBuffer;
-        HashTable_find(StorageBufferTable, alias, &newBuffer);
+        HashTable_find(UniformBufferTable, alias, &newBuffer);
 
         // if it already exists, insert that one instead.
         if (newBuffer) {
@@ -403,7 +415,7 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
         glBindBuffer(GL_UNIFORM_BUFFER, GL_NONE);
 
         // Insert the buffer into the both the storage buffer table and the local table.
-        HashTable_insert(StorageBufferTable, alias, newBuffer);
+        HashTable_insert(UniformBufferTable, alias, newBuffer);
         HashTable_insert(table, alias, newBuffer);
     }
 }

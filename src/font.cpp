@@ -203,7 +203,7 @@ void DrawTextMesh(const TextRender* textRender, const Camera* camera, const doub
     }
 
     // Calculate the projection. in this case its just an Orthographic projection to show up in screen-space.
-    Matrix mvp = MatrixIdentity();
+    Matrix mvp = MatrixIdentity() * Ortho(-aspectRatio, aspectRatio, -1.0, 1.0, 1.0, -1.0);
     DrawRenderable(textRender->textMesh, textRender->font->material, &mvp);
 
 }

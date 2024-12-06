@@ -116,9 +116,11 @@ typedef struct Shader {
     GLuint Program;             // Location of the shader program on the GPU.
     HashTable* Uniforms;        // Table of uniforms.
     HashTable* UniformBuffers;  // Table of uniform buffers.
+    uint64_t References;
 } Shader;
 
 void InitShaders();
+void Shader_use(const Shader* shader);
 void DereferenceShaders();
 
 GLint internal_Program_uniform_count(const GLuint program);

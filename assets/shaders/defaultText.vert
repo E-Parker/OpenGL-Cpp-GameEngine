@@ -21,7 +21,7 @@ out float time;
 
 void main() {
    
-   position = (u_camera * vec4(aPosition, 1.0)).xyz;
+   position = (u_mvp * vec4(aPosition, 1.0)).xyz;
    normal = aNormal;
    tcoord = aTcoord;
    color = u_color;
