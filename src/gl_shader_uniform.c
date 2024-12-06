@@ -93,15 +93,15 @@ void UniformBuffer_destroy(UniformBuffer** buffer) {
 }
 
 void internal_UniformBuffer_set_region(const UniformBuffer* buffer, const uint64_t byteIndex, const uint64_t regionSizeInBytes, const void* data) {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer->BufferObject);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, byteIndex, regionSizeInBytes, data);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
+    glBindBuffer(GL_UNIFORM_BUFFER, buffer->BufferObject);
+    glBufferSubData(GL_UNIFORM_BUFFER, byteIndex, regionSizeInBytes, data);
+    glBindBuffer(GL_UNIFORM_BUFFER, GL_NONE);
 }
 
 void internal_UniformBuffer_set_all(const UniformBuffer* buffer, const void* data) {
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer->BufferObject);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, buffer->Size, data);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
+    glBindBuffer(GL_UNIFORM_BUFFER, buffer->BufferObject);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, buffer->Size, data);
+    glBindBuffer(GL_UNIFORM_BUFFER, GL_NONE);
 }
 
 
@@ -397,10 +397,10 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
         newBuffer->References = 1;
 
         glGenBuffers(1, &(newBuffer->BufferObject));
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, newBuffer->BufferObject);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, size, NULL, GL_STATIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, newBuffer->BindingIndex, newBuffer->BufferObject);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, GL_NONE);
+        glBindBuffer(GL_UNIFORM_BUFFER, newBuffer->BufferObject);
+        glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STATIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, newBuffer->BindingIndex, newBuffer->BufferObject);
+        glBindBuffer(GL_UNIFORM_BUFFER, GL_NONE);
 
         // Insert the buffer into the both the storage buffer table and the local table.
         HashTable_insert(StorageBufferTable, alias, newBuffer);
