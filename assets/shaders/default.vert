@@ -16,6 +16,12 @@ layout (std140) uniform FrameData {
     mat4 u_camera;
 };
 
+layout (std140) uniform LightData {
+    int u_activeLights;
+    Light[128] u_Lights;
+};
+
+
 uniform mat4 u_mvp;
 
 out vec3 position;

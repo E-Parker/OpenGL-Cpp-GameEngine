@@ -48,7 +48,6 @@ int main(void) {
     // Load Font:
     Font* defautFont = CreateFont("./assets/defaultAssets/IBMPlexMono-Regular.ttf", "IBM", DefaultTextMaterial, 22.0f);
     
-    
     // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
     TextRender* testText = new TextRender();
     SetFont(testText, "IBM", defautFont);
@@ -58,9 +57,9 @@ int main(void) {
     StaticMesh* mesh = CreateStaticMeshFromWavefront("./assets/meshes/head.obj");
     mesh->SetMaterial(Mat0, 0);
     Matrix* transform = GET_ASSET_TRANSFORM(mesh);
-    
-    Camera* mainCamera = new Camera(NoClipCameraUpdate);
 
+    Camera* mainCamera = new Camera(NoClipCameraUpdate);
+    
     Shader* testShader = Shader_create(DefaultTextMaterial->Program, "TestShader");
     //Uniform* mvpUniform;
     //Uniform_set_data(mvpUniform, transform);
