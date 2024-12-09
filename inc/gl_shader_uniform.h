@@ -134,10 +134,11 @@ void Shader_use(const Shader* shader);
 void DereferenceShaders();
 
 GLint internal_Program_uniform_count(const GLuint program);
+GLint internal_Program_buffer_count(const GLuint program);
 void internal_Program_uniform_parse(const GLuint program, HashTable* table);
 void internal_Program_buffer_parse(const GLuint program, HashTable* table);
 static void internal_Program_buffer_uniform_parse(const GLuint program, const uint16_t uniformCount, const GLint* indicies, UniformBuffer* uniformBuffer);
-static void internal_program_uniformStruct_parse(const GLuint program, const uint16_t uniformCount, const GLint* indicies, HashTable* table);
+static void internal_program_uniformStruct_parse(const GLuint program, const uint16_t uniformCount, GLint* indicies, HashTable* table);
 
 Shader* Shader_create(const GLuint program, const char* alias);
 void Shader_destroy(Shader** shader);

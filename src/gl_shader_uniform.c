@@ -380,7 +380,8 @@ void Shader_destroy(Shader** shader){
     }
 
     for (HashTable_array_itterator((*shader)->UniformBuffers)) {
-        UniformBuffer_destroy(&(UniformBuffer*)((*shader)->UniformBuffers->Array[i].Value));
+        UniformBuffer* buffer = (UniformBuffer*)((*shader)->UniformBuffers->Array[i].Value);
+        UniformBuffer_destroy(&buffer);
     }
 
     free((*shader)->Alias);
@@ -399,8 +400,8 @@ void Shader_get_uniformBuffer(const Shader* shader, const char* alias, UniformBu
 void Shader_debug(const GLuint program) {
     char* buffer = (char*)calloc(1, 512);
     assert(buffer != NULL);
-    uint64_t bufferLength = 0;
-    glGetShaderInfoLog(program, 512, bufferLength, buffer);
+    int bufferLength = 0;
+    glGetShaderInfoLog(program, 512, &bufferLength, buffer);
     printf(buffer);
     free(buffer);
 }
