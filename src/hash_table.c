@@ -136,9 +136,18 @@ void HashTable_remove(HashTable* table, const char* key) {
 }
 
 void HashTable_resize(HashTable* table, const uint64_t size) {
+    // Resize a hash table to the nearest power of 2 to the size provided. (values less than 16 will be rounded up to 16).
 
-    HashTableItem* Temp = (HashTableItem*)calloc(size, sizeof(HashTableItem));
-    uint64_t* TempIndicies = (uint64_t*)calloc(size, sizeof(uint64_t));
+
+    uint64_t newSize = (size <= 16) ? 16 : Pow2Ceiling(uint64_t, size);
+
+    // if the table is already the size provided, skip resizing.
+    if (table->Size == newSize) {
+        return;
+    }
+
+    HashTableItem* Temp = (HashTableItem*)calloc(newSize, sizeof(HashTableItem));
+    uint64_t* TempIndicies = (uint64_t*)calloc(newSize, sizeof(uint64_t));
     assert(Temp != NULL);
     assert(TempIndicies != NULL);
 
@@ -150,13 +159,13 @@ void HashTable_resize(HashTable* table, const uint64_t size) {
         }
 
         // Generate the hash for the item.
-        uint64_t hash = fnvHash64(table->Array[i].Key, FindBufferEnd(table->Array[i].Key)) % size;
+        uint64_t hash = fnvHash64(table->Array[i].Key, FindBufferEnd(table->Array[i].Key)) % newSize;
         uint64_t originalHash = hash;
 
         // Check for collisions, linearly probe for a free slot.
         while (Temp[hash].Key != NULL) {
             hash++;
-            hash %= size;
+            hash %= newSize;
 
             if (originalHash == hash) {
                 // something went really wrong and an open slot could not be found.
@@ -176,7 +185,7 @@ void HashTable_resize(HashTable* table, const uint64_t size) {
     
     Temp = NULL;
     TempIndicies = NULL;
-    table->Size = size;
+    table->Size = newSize;
 }
 
 

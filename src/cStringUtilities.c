@@ -1,6 +1,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
 #include "cStringUtilities.h"
 
 uint64_t fnvHash64(const char* buffer, const char* const bufferEnd) {
@@ -36,6 +37,7 @@ char* FindBufferEnd(const char* buffer) {
     }
     return NULL;
 }
+
 
 
 

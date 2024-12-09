@@ -46,12 +46,12 @@ int main(void) {
     SetTextureFromAlias(Mat0, "MissingTexture", 0);
     
     // Load Font:
-    Font* departureMono = CreateFont("./assets/defaultAssets/DepartureMono-Regular.ttf", "DepartureMono", DefaultTextMaterial, 14.0f);
+    Font* defautFont = CreateFont("./assets/defaultAssets/IBMPlexMono-Regular.ttf", "IBM", DefaultTextMaterial, 22.0f);
     
     
     // There is a known issue with fonts right now. Something is getting deleted when it isn't supposed to. Will run fine on a first pass.  
     TextRender* testText = new TextRender();
-    SetFont(testText, "DepartureMono", departureMono);
+    SetFont(testText, "IBM", defautFont);
 
 
     //StaticMesh* mesh = CreateStaticMeshPrimativePlane(1, 1);
@@ -59,19 +59,23 @@ int main(void) {
     mesh->SetMaterial(Mat0, 0);
     Matrix* transform = GET_ASSET_TRANSFORM(mesh);
     
-    
-
     Camera* mainCamera = new Camera(NoClipCameraUpdate);
 
-    Shader* testShader = Shader_create(Mat0->Program, "TestShader");
-    Uniform* mvpUniform;
+    Shader* testShader = Shader_create(DefaultTextMaterial->Program, "TestShader");
+    //Uniform* mvpUniform;
     //Uniform_set_data(mvpUniform, transform);
     
     int x = 0;
     int y = 0;
-    GLfloat time;
+    GLfloat time = 0.0f;
+
+    void* testData = calloc(16, 64);
+
+    GLuint activeLights = 0;
+
+   // UniformBuffer_set_Global("LightData", "u_activeLights", &activeLights);
     
-    //Matrix* data = Uniform_get_data(Matrix, mvpUniform);
+    //Matrix* data = internal_Uniform_get_data(Matrix, mvpUniform);
     
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
@@ -101,16 +105,26 @@ int main(void) {
         
         float16 cameraView = ToFloat16(mainCamera->ViewMatrix);
 
-        UniformBuffer_set_Global("FrameData", "u_camera", &cameraView.v);
-        UniformBuffer_set_Global("FrameData", "u_time", &time);
+        std::cout << time << std::endl;
 
+        UniformBuffer* buffer = UniformBuffer_get_self("FrameData");
+        void* data = UniformBuffer_get_shared(buffer);
+        //UniformBuffer* buffer1 = UniformBuffer_get_self("LightData");
+
+        //UniformStruct* u_lights;
+        //UniformBuffer_get_Struct(buffer1, "u_lights", &u_lights);
+
+        UniformBuffer_set_Global("FrameData", "u_time", &time);
+        UniformBuffer_set_Global("FrameData", "u_camera", &cameraView.v);
+
+        //UniformBuffer_set_Struct_at_Global("LightData", "u_lights", "position", 0, testData);
         UniformBuffer_update_all();
 
-        Shader_use(testShader);
+        //Shader_use(testShader);
 
         mesh->Draw();
        
-        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 22.0f);
+        SetText(testText,"This is a test.", x, y, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight()), 2.0f);
         DrawTextMesh(testText, mainCamera, AspectRatio());
 
         /* Swap front and back buffers */
@@ -118,19 +132,19 @@ int main(void) {
 
         /* Poll and process events */
         glUtilPollEvents();
-        
+        //Shader_debug(Mat0->Program);
     }
 
     delete mainCamera;
-
     delete mesh;
-
     delete DefaultTextMaterial;
     delete NormalMaterial;
     delete TChoodColorMaterial;
     delete Mat0;
-
     delete testText;
+
+    free(testData);
+
     Shader_destroy(&testShader);
     glUtilTerminate();
     return 0;

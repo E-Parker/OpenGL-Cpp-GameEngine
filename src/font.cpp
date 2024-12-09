@@ -33,7 +33,7 @@ Font::Font(Material* material, uint16_t charactersToLoad, uint16_t atlasSize) : 
     textureAtlas->width = AtlasSize;
     textureAtlas->height = AtlasSize;
     textureAtlas->channels = 1;
-    textureAtlas->filterType = GL_NEAREST;
+    textureAtlas->filterType = GL_LINEAR;
     fontAtlasTextureData = new uint8_t[atlasSize * atlasSize];
     packedChars = new stbtt_packedchar[CharactersLoaded];
     alignedQuads = new stbtt_aligned_quad[CharactersLoaded];

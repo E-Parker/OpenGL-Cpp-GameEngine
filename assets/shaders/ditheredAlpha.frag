@@ -23,10 +23,12 @@ void main() {
     
     float scaledDepth = (4.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.far - gl_DepthRange.near);
 	float clipDepth = scaledDepth / gl_FragCoord.w;
-    
-	vec3 rand_v3 = hash32(gl_FragCoord.xy + vec2(time - floor(time), time - floor(time)));
-    
-    if(clipDepth < rand_v3.r || color.a < rand_v3.r) {
+
+    vec2 seed = vec2(time, time * 2.0) + gl_FragCoord.xy;
+	vec3 rand_v3 = hash32(seed);
+	float poly_rand = rand_v3.r * rand_v3.g;// * rand_v3.b;
+
+    if(clipDepth < poly_rand || color.a < poly_rand) {
         discard;
     }
 

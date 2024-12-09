@@ -4,10 +4,16 @@ layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTcoord;
 
+struct Light{
+  vec3 position;        // 16   0
+  vec3 direction;       // 16   16
+  vec3 color;           // 16   32
+  float attenuation;    // 4    48
+};
 
 layout (std140) uniform FrameData {
-    mat4 u_camera;
     float u_time;
+    mat4 u_camera;
 };
 
 uniform mat4 u_mvp;
@@ -20,7 +26,6 @@ out float time;
 void main() {
     
     position = (u_mvp * vec4(aPosition, 1.0)).xyz;
-
     normal = aNormal;
     tcoord = aTcoord;
     time = u_time;
