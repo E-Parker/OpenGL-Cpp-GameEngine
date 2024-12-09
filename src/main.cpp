@@ -104,8 +104,6 @@ int main(void) {
         
         float16 cameraView = ToFloat16(mainCamera->ViewMatrix);
 
-        std::cout << time << std::endl;
-
         UniformBuffer* buffer = UniformBuffer_get_self("FrameData");
         void* data = UniformBuffer_get_shared(buffer);
         //UniformBuffer* buffer1 = UniformBuffer_get_self("LightData");

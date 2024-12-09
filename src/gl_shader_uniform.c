@@ -177,8 +177,8 @@ void UniformBuffer_update_all() {
 
     for (HashTable_array_itterator(UniformBufferTable)) {
         UniformBuffer* buffer = HashTable_array_at(UniformBuffer, UniformBufferTable, i);
-        printf(buffer->Alias);
-        printf("\t Changes made: %d %c %c", buffer->ChangesMade, '\n', '\n');
+        //printf(buffer->Alias);
+        //printf("\t Changes made: %d %c %c", buffer->ChangesMade, '\n', '\n');
         if (buffer && buffer->ChangesMade != 0) {
             internal_UniformBuffer_buffer(buffer);
             buffer->ChangesMade = 0;
