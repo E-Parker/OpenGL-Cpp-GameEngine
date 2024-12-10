@@ -39,7 +39,7 @@ int main(void) {
     Material* DefaultTextMaterial = new Material("./assets/shaders/defaultText.vert", "./assets/shaders/defaultText.frag", 1, GL_BACK, GL_ALWAYS);
     Material* NormalMaterial = new Material("./assets/shaders/default.vert", "./assets/shaders/normal_color.frag", 0, GL_BACK, GL_LESS);
     Material* TChoodColorMaterial = new Material("./assets/shaders/default.vert", "./assets/shaders/tcoord_color.frag", 0, GL_BACK, GL_LESS);
-    Material* Mat0 = new Material("./assets/shaders/default.vert", "./assets/shaders/ditheredAlpha.frag", 1, GL_BACK, GL_LESS);
+    Material* Mat0 = new Material("./assets/shaders/default.vert", "./assets/shaders/default.frag", 1, GL_BACK, GL_LESS);
     
     // Set Material Textures:
     SetTextureFromAlias(Mat0, "MissingTexture", 0);

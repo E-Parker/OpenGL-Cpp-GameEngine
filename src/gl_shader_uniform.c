@@ -1,9 +1,9 @@
 ﻿#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -102,9 +102,7 @@ void internal_UniformBuffer_buffer(const UniformBuffer* buffer) {
 void internal_UniformBuffer_set(UniformBuffer* buffer, const char* alias, void* data) {
     // set the value of an item in a buffer by its variable name.
 
-    if (!buffer) {
-        return;
-    }
+    if (!buffer) return; 
 
     Uniform* uniform;
     UniformBuffer_get_Uniform(buffer, alias, &uniform);
@@ -118,11 +116,13 @@ void internal_UniformBuffer_set(UniformBuffer* buffer, const char* alias, void* 
 void UniformBuffer_get_Uniform(const UniformBuffer* buffer, const char* alias, Uniform** outVal) {
     // Get an item in a buffer by its variable name.
     if(buffer) HashTable_find(buffer->Uniforms, alias, outVal);
+    else *outVal = NULL;
 }
 
 void UniformBuffer_get_Struct(const UniformBuffer* buffer, const char* alias, UniformStruct** outVal) {
     // Get the whole buffer from its name.
     if(buffer) HashTable_find(buffer->UniformStructs, alias, outVal);
+    else *outVal = NULL;
 }
 
 void internal_UniformBuffer_set_Struct(const UniformBuffer* buffer, const char* alias, const char* memberAlias, void* data) {
@@ -130,10 +130,7 @@ void internal_UniformBuffer_set_Struct(const UniformBuffer* buffer, const char* 
     UniformStruct* uniformStruct;
     Uniform* uniform;
     HashTable_find(buffer->UniformStructs, alias, &uniformStruct);
-    
-    if (!uniformStruct) return;
-
-    UniformStruct_set_member(uniformStruct, memberAlias, data);
+    if (uniformStruct) UniformStruct_set_member(uniformStruct, memberAlias, data);
 }
 
 void internal_UniformBuffer_set_Struct_at(const UniformBuffer* buffer, const char* alias, const char* memberAlias, int i, void* data) {
@@ -446,7 +443,6 @@ void Shader_use(const Shader* shader) {
             upload_from_gl_type(uniform->Location, uniform->Type, uniform->Elements, internal_Uniform_get_data(void, uniform));
         }
     }
-    
 
     // Set the active texture for each texture in the material.
     //for (uint16_t i = 0; i < material->TexturesUsed; i++) {
@@ -462,8 +458,6 @@ GLint internal_Program_buffer_count(const GLuint program) {
     GLint* params = (GLint*)malloc(sizeof(GLint));
 
     glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, params);
-
-    //glGetProgramiv(program, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, params);
 
     if (params == NULL) {
         // something has gone very wrong and the shader has no uniforms.

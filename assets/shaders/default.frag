@@ -11,8 +11,8 @@ out vec4 FragColor;
 in vec3 position;
 in vec3 normal;
 in vec2 tcoord;
-in int activeLights;
-//in Light[128] lights;
+in flat int activeLights;
+in Light[128] lights;
 
 uniform sampler2D albedo;
 
