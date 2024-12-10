@@ -29,28 +29,19 @@ void DereferenceShaders() {
     // Function to dereference all shaders and shader objects. 
     // After this is called, all functions will fail until InitShaders() is called again.
     //
-
+    
     // Destroy the uniform buffers.
-    for (uint64_t i = 0; i < UniformBufferTable->Size; i++) {
-        if (UniformBufferTable->Array[i].Value) {
-            UniformBuffer_destroy((UniformBuffer**)&(UniformBufferTable->Array[i].Value));
-        }
+    for (HashTable_array_iterator(UniformBufferTable)) {
+        UniformBuffer_destroy(HashTable_array_at_ref(UniformBuffer, UniformBufferTable, i));
     }
 
     // Destroy the shader programs.
-    for (uint64_t i = 0; i < ShaderProgramTable->Size; i++) {
-        if (ShaderProgramTable->Array[i].Value) {
-            Shader_destroy((Shader**)&(ShaderProgramTable->Array[i].Value));
-        }
+    for (HashTable_array_iterator(ShaderProgramTable)) {
+        Shader_destroy(HashTable_array_at_ref(Shader, ShaderProgramTable, i));
     }
 
     // Destroy the shader programs.
-    //for (uint64_t i = 0; i < TextureTable->Size; i++) {
-    //    if (TextureTable->Array[i].Value) {
-    //        Texture_destroy((Texture**)&(TextureTable->Array[i].Value));
-    //    }
-    //}
-
+    
     // Now destroy the tables which store them. 
     HashTable_destroy(&ShaderProgramTable);
     HashTable_destroy(&UniformBufferTable);
@@ -72,11 +63,9 @@ void UniformBuffer_destroy(UniformBuffer** buffer) {
 
     glDeleteBuffers(1, &((*buffer)->BufferObject));
 
-    for (HashTable_array_itterator((*buffer)->Uniforms)) {
+    for (HashTable_array_iterator((*buffer)->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, (*buffer)->Uniforms, i);
-        if (uniform) {
-            free(uniform->Alias);
-        }
+        free(uniform->Alias);
     }
 
     // Call destroy first since removing from the global table will incorrectly destroy the object.
@@ -175,7 +164,7 @@ UniformBuffer* UniformBuffer_get_self(const char* alias) {
 void UniformBuffer_update_all() {
     // Upload all uniform buffers.
 
-    for (HashTable_array_itterator(UniformBufferTable)) {
+    for (HashTable_array_iterator(UniformBufferTable)) {
         UniformBuffer* buffer = HashTable_array_at(UniformBuffer, UniformBufferTable, i);
         //printf(buffer->Alias);
         //printf("\t Changes made: %d %c %c", buffer->ChangesMade, '\n', '\n');
@@ -289,13 +278,33 @@ UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLe
 
     for (uint16_t i = 0; i < memberCount; i++) {
         Uniform* newMember = internal_Uniform_create_shared(&info[i], newStruct->Data);
-        //newMember->Offset = offsets[i];
         newMember->Stride = stride;
         HashTable_insert(newStruct->Members, info[i].Alias, newMember);
     }
 
     return newStruct;
 }
+
+void internal_UniformStruct_destroy(UniformStruct** uniformStruct) {
+    // Internal function to clean up a UniformStruct.
+    //
+    //
+
+    // Free all the uniforms first, then dereference the HashTable.
+    for(HashTable_array_iterator((*uniformStruct)->Members)) {
+        Uniform* uniform = HashTable_array_at(Uniform, (*uniformStruct)->Members, i);
+        free(uniform->Alias);
+        
+        // I don't think this can actualy trigger but just in case I change the implemention.
+        if(uniform->UniformType == UNIFORM_TYPE_SINGLE) free(uniform->Data);
+    }
+
+    HashTable_destroy(&((*uniformStruct)->Members));
+    free(*uniformStruct);
+    *uniformStruct = NULL;
+}
+
+
 
 void UniformStruct_get_member(UniformStruct* uniformStruct, const char* alias, Uniform** outVal) {
     HashTable_find(uniformStruct->Members, alias, outVal);
@@ -366,11 +375,12 @@ void Shader_destroy(Shader** shader){
     if (--(*shader)->References != 0) {
         return;
     }
+    
 
     glDeleteProgram((*shader)->Program);
     (*shader)->Program = GL_NONE;
 
-    for (HashTable_array_itterator((*shader)->Uniforms)) {
+    for (HashTable_array_iterator((*shader)->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, (*shader)->Uniforms, i);
         if (uniform) {
             free(uniform->Alias);
@@ -379,11 +389,10 @@ void Shader_destroy(Shader** shader){
         }
     }
 
-    for (HashTable_array_itterator((*shader)->UniformBuffers)) {
-        UniformBuffer* buffer = (UniformBuffer*)((*shader)->UniformBuffers->Array[i].Value);
-        UniformBuffer_destroy(&buffer);
+    for (HashTable_array_iterator((*shader)->UniformBuffers)) {
+        UniformBuffer_destroy(HashTable_array_at_ref(UniformBuffer, (*shader)->UniformBuffers, i));
     }
-
+    
     free((*shader)->Alias);
     free((*shader));
     *shader = NULL;
@@ -429,7 +438,7 @@ void Shader_use(const Shader* shader) {
     glUseProgram(shader->Program);
        
     // for each non-buffer uniform, upload it to the GPU.
-    for (HashTable_array_itterator(shader->Uniforms)) {
+    for (HashTable_array_iterator(shader->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, shader->Uniforms, i);
         if (uniform != NULL) {
             //printf("Uniform Location: %d", uniform->Location);
@@ -506,8 +515,6 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
     for (GLint i = 0; i < bufferCount; i++) {
 
         // get the name of the uniform buffer:
-        //glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_NAME_LENGTH, &aliasLength);
-        
         glGetActiveUniformBlockName(program, i, MAX_ALIAS_SIZE, &aliasLength, buffer);
         alias = (char*)malloc(aliasLength + 1);
         assert(alias != NULL);
@@ -532,7 +539,6 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
 
         newBuffer = (UniformBuffer*)calloc(1, sizeof(UniformBuffer) + size);
         assert(newBuffer != NULL);
-
 
         // Hash tables are intentionally oversized. This is because we don't know how many indicies are actually parts of structures.
         newBuffer->Uniforms = HashTable_create(Uniform, indicies);

@@ -71,9 +71,10 @@ typedef struct UniformStruct {
     uint32_t Elements;
     uint64_t Size;      // total size of the struct.
     HashTable* Members; 
-    void* Data;
+    void* Data;         // Maybe get rid of this. the offset can be done with a define.
 } UniformStruct;
 
+void internal_UniformStruct_destroy(UniformStruct** uniformStruct);
 UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLength, const UniformInformation* info, const uint16_t memberCount, const uint64_t elements);
 
 void UniformStruct_get_member(UniformStruct* uniformStruct, const char* alias, Uniform** outVal);
