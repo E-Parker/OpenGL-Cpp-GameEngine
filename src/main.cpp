@@ -2,7 +2,6 @@
 #include <GLFW/glfw3.h>
 
 #include <cassert>
-#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -67,8 +66,6 @@ int main(void) {
     int x = 0;
     int y = 0;
     GLfloat time = 0.0f;
-
-    void* testData = calloc(16, 64);
 
     GLuint activeLights = 0;
 
@@ -139,8 +136,6 @@ int main(void) {
     delete TChoodColorMaterial;
     delete Mat0;
     delete testText;
-
-    free(testData);
 
     Shader_destroy(&testShader);
     glUtilTerminate();
