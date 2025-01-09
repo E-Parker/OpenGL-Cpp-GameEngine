@@ -1,9 +1,9 @@
 ﻿#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -72,7 +72,7 @@ void UniformBuffer_destroy(UniformBuffer** buffer) {
 
     glDeleteBuffers(1, &((*buffer)->BufferObject));
 
-    for (HashTable_array_itterator((*buffer)->Uniforms)) {
+    for (HashTable_array_iterator((*buffer)->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, (*buffer)->Uniforms, i);
         if (uniform) {
             free(uniform->Alias);
@@ -114,6 +114,7 @@ void internal_UniformBuffer_set(UniformBuffer* buffer, const char* alias, void* 
     // set the value of an item in a buffer by its variable name.
 
     if (!buffer) {
+        printf("Error UniformBuffer_set:\t\tBuffer \"%s\" does not exist.\n", alias);
         return;
     }
 
@@ -136,32 +137,46 @@ void UniformBuffer_get_Struct(const UniformBuffer* buffer, const char* alias, Un
     if(buffer) HashTable_find(buffer->UniformStructs, alias, outVal);
 }
 
-void internal_UniformBuffer_set_Struct(const UniformBuffer* buffer, const char* alias, const char* memberAlias, void* data) {
+void internal_UniformBuffer_set_Struct(UniformBuffer* buffer, const char* alias, const char* memberAlias, void* data) {
     // upload data to the uniform struct.
     UniformStruct* uniformStruct;
     Uniform* uniform;
     HashTable_find(buffer->UniformStructs, alias, &uniformStruct);
     
-    if (!uniformStruct) return;
+    if (!uniformStruct) {
+        printf("Error UniformBuffer_set_Struct\t: Uniform Structure \"%s\" does not exist.\n", alias);
+        return;
+    
+    }
 
     UniformStruct_set_member(uniformStruct, memberAlias, data);
+
+    buffer->ChangesMade++;
 }
 
-void internal_UniformBuffer_set_Struct_at(const UniformBuffer* buffer, const char* alias, const char* memberAlias, int i, void* data) {
+void internal_UniformBuffer_set_Struct_at(UniformBuffer* buffer, const char* alias, const char* memberAlias, int i, void* data) {
     
     if (!buffer) {
+        printf("Error UniformBuffer_set_Struct_at\t: Uniform Buffer \"%s\" does not exist.\n", alias);
         return;
     }
 
     UniformStruct* uniformStruct;
     Uniform* uniform;
     HashTable_find(buffer->UniformStructs, alias, &uniformStruct);
-    if (!uniformStruct) return;
+    if (!uniformStruct) {
+        printf("Error UniformBuffer_set_Struct_at\t: Uniform Structure \"%s\" does not exist.\n", alias);
+        return;
+    }
 
     UniformStruct_get_member(uniformStruct, memberAlias, &uniform);
-    if (!uniform) return;
+    if (!uniform) {
+        printf("Error UniformBuffer_set_Struct_at\t: Structure \"%s\" does not contain a member named \"%s\"", alias, memberAlias);
+        return;
+    }
 
-    internal_Uniform_set_at(uniform, i, data);
+    UniformStruct_set_member_at(uniformStruct, memberAlias, i, data);
+    buffer->ChangesMade++;
 }
 
 UniformBuffer* UniformBuffer_get_self(const char* alias) {
@@ -175,7 +190,7 @@ UniformBuffer* UniformBuffer_get_self(const char* alias) {
 void UniformBuffer_update_all() {
     // Upload all uniform buffers.
 
-    for (HashTable_array_itterator(UniformBufferTable)) {
+    for (HashTable_array_iterator(UniformBufferTable)) {
         UniformBuffer* buffer = HashTable_array_at(UniformBuffer, UniformBufferTable, i);
         //printf(buffer->Alias);
         //printf("\t Changes made: %d %c %c", buffer->ChangesMade, '\n', '\n');
@@ -204,7 +219,7 @@ Uniform* internal_Uniform_create_shared(const UniformInformation* info, void* sh
     newUniform->Elements = info->Elements;
     newUniform->Offset = info->BlockOffset;
     newUniform->Size = size;
-    newUniform->Stride = 0;
+    newUniform->Stride = size + (16 - (size % 16));
     newUniform->Type = info->Type;
 
     return newUniform;
@@ -228,9 +243,9 @@ Uniform* internal_Uniform_create(const UniformInformation* info) {
     newUniform->Alias = info->Alias;
     newUniform->AliasLength = info->AliasLength;
     newUniform->Size = size;
+    newUniform->Stride = size + (16 - (size % 16));
     newUniform->Elements = info->Elements;
     newUniform->Offset = info->BlockOffset;
-    newUniform->Stride = 0;
     newUniform->Type = info->Type;
 
     return newUniform;
@@ -239,31 +254,40 @@ Uniform* internal_Uniform_create(const UniformInformation* info) {
 void internal_Uniform_set_at(Uniform* uniform, int i, void* data) {
     // set the value of a particular index in a uniform.
 
-    if (i < 0 || i > uniform->Elements) return;
+    if (i < 0 || i >= uniform->Elements) {
+        printf("Error Uniform_set_at:\tIndex: %d is out of range. The uniform only has %d element(s)\n", i, uniform->Elements);
+        return;
+    }
 
     uint8_t* elementAddress;
     uint8_t* dataAddress;
 
-    elementAddress = (uint8_t*)uniform->Data + uniform->Offset;
+    elementAddress = (uint8_t*)uniform->Data;
     dataAddress = (uint8_t*)data + (i * uniform->Size);
     memcpy(elementAddress, dataAddress, uniform->Size);
-
+    
+    //printf("Name:\t%s\tStride:\t%04X\tOffset:\t%04X\n",uniform->Alias, (int)(i * uniform->Stride), (int)uniform->Offset);
 }
 
 void internal_Uniform_set_data(Uniform* uniform, void* data) {
     // set all of the data. If the uniform is an array it expects elements * size of data. 
 
+    if (uniform->Size == uniform->Stride) {
+        memcpy(uniform->Data, data, uniform->Size * uniform->Elements);
+        return;
+    }
+
     uint8_t* elementAddress;
     uint8_t* dataAddress;
 
     for (uint32_t i = 0; i < uniform->Elements; i++) {
-        elementAddress = (char*)uniform->Data;
-        dataAddress = (char*)data + (i * uniform->Size);
+        elementAddress = (uint8_t*)uniform->Data;
+        dataAddress = (uint8_t*)data + (i * uniform->Size);
         memcpy(elementAddress, dataAddress, uniform->Size);
     }
 }
 
-UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLength, const UniformInformation* info, const uint16_t memberCount, const uint64_t elements) {
+UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLength, const UniformInformation* info, const uint16_t memberCount, const uint64_t elements, void* shared) {
 
     uint64_t totalSize = 0;
     uint64_t stride = 0;
@@ -274,22 +298,27 @@ UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLe
     for (uint16_t i = 0; i < memberCount; i++) {
         offsets[i] = stride;
         stride += size_from_gl_type(info[i].Type) * info[i].Elements;
+        stride += 16 - (stride % 16);  // OpenGL structs are aligned to 16.
     }
 
     totalSize = stride * elements;
-    UniformStruct* newStruct = (UniformStruct*)calloc(1, sizeof(UniformStruct) + totalSize);
+    UniformStruct* newStruct = (UniformStruct*)malloc(sizeof(UniformStruct));
     assert(newStruct);
 
     newStruct->Alias = alias;
     newStruct->AliasLength = aliasLength;
-    newStruct->Data = (uint8_t*)newStruct + sizeof(UniformStruct);
+    newStruct->Data = shared;
     newStruct->Members = HashTable_create(Uniform, memberCount);
     newStruct->Size = totalSize;
     newStruct->Elements = elements;
+    newStruct->Offset = info[0].BlockOffset;
 
     for (uint16_t i = 0; i < memberCount; i++) {
-        Uniform* newMember = internal_Uniform_create_shared(&info[i], newStruct->Data);
-        //newMember->Offset = offsets[i];
+        
+        // Find the smallest offset in the struct, which is the same as the offset of the struct. 
+        if (info[i].BlockOffset < newStruct->Offset) newStruct->Offset = info[0].BlockOffset;
+
+        Uniform* newMember = internal_Uniform_create_shared(&(info[i]), shared);
         newMember->Stride = stride;
         HashTable_insert(newStruct->Members, info[i].Alias, newMember);
     }
@@ -301,12 +330,30 @@ void UniformStruct_get_member(UniformStruct* uniformStruct, const char* alias, U
     HashTable_find(uniformStruct->Members, alias, outVal);
 }
 
+void UniformStruct_set_member_at(UniformStruct* uniformStruct, const char* alias, uint64_t i, void* data) {
+
+    Uniform* uniform;
+    HashTable_find(uniformStruct->Members, alias, &uniform);
+    if (!uniform) {
+        printf("Error UniformStruct_set_member\t: could not find Uniform in Structure \"%s\" named \"%s\"\n", uniformStruct->Alias, alias);
+        return;
+    }
+    uint8_t* elementAddress;
+    uint8_t* dataAddress;
+
+    elementAddress = (uint8_t*)uniformStruct->Data + (i * uniform->Stride) + uniform->Offset;
+    dataAddress = (uint8_t*)data + (i * uniform->Size);
+    memcpy(elementAddress, dataAddress, uniform->Size);
+}
+
 void UniformStruct_set_member(UniformStruct* uniformStruct, const char* alias, void* data) {
 
     Uniform* uniform;
     HashTable_find(uniformStruct->Members, alias, &uniform);
-    if (!uniform) return;
-
+    if (!uniform) {
+        printf("Error UniformStruct_set_member\t: could not find Uniform in Structure \"%s\" named \"%s\"\n", uniformStruct->Alias, alias);
+        return;
+    }
     uint8_t* elementAddress;
     uint8_t* dataAddress;
 
@@ -317,12 +364,11 @@ void UniformStruct_set_member(UniformStruct* uniformStruct, const char* alias, v
     }
 }
 
-
 Shader* Shader_create(const GLuint program, const char* alias) {
     /* create a new shader, populate the fields and return a pointer to it. */
 
     Shader* shader;
-    HashTable_find(ShaderProgramTable, alias, &shader);
+    HashTable_find(ShaderProgramTable, ShaderProgramTable, &shader);
 
     if (shader) {
         shader->References++;
@@ -356,6 +402,8 @@ Shader* Shader_create(const GLuint program, const char* alias) {
     shader->AliasEnd = shaderName + aliasLength - 1;
     shader->Program = program;
 
+    HashTable_insert(ShaderProgramTable, alias, shader);
+
     return shader;
 
 }
@@ -370,7 +418,7 @@ void Shader_destroy(Shader** shader){
     glDeleteProgram((*shader)->Program);
     (*shader)->Program = GL_NONE;
 
-    for (HashTable_array_itterator((*shader)->Uniforms)) {
+    for (HashTable_array_iterator((*shader)->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, (*shader)->Uniforms, i);
         if (uniform) {
             free(uniform->Alias);
@@ -379,7 +427,7 @@ void Shader_destroy(Shader** shader){
         }
     }
 
-    for (HashTable_array_itterator((*shader)->UniformBuffers)) {
+    for (HashTable_array_iterator((*shader)->UniformBuffers)) {
         UniformBuffer* buffer = (UniformBuffer*)((*shader)->UniformBuffers->Array[i].Value);
         UniformBuffer_destroy(&buffer);
     }
@@ -429,7 +477,7 @@ void Shader_use(const Shader* shader) {
     glUseProgram(shader->Program);
        
     // for each non-buffer uniform, upload it to the GPU.
-    for (HashTable_array_itterator(shader->Uniforms)) {
+    for (HashTable_array_iterator(shader->Uniforms)) {
         Uniform* uniform = HashTable_array_at(Uniform, shader->Uniforms, i);
         if (uniform != NULL) {
             //printf("Uniform Location: %d", uniform->Location);
@@ -541,9 +589,9 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
         uniformIndicies = (GLint*)calloc(indicies, sizeof(GLint));
         assert(uniformIndicies != NULL);
         glGetActiveUniformBlockiv(program, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, uniformIndicies);
-
+        
         internal_Program_buffer_uniform_parse(program, indicies, uniformIndicies, newBuffer);
-        internal_program_uniformStruct_parse(program, indicies, uniformIndicies, newBuffer->UniformStructs);
+        internal_program_uniformStruct_parse(program, indicies, uniformIndicies, newBuffer);
 
         free(uniformIndicies);
 
@@ -567,7 +615,7 @@ void internal_Program_buffer_parse(const GLuint program, HashTable* table) {
     }
 }
 
-static void internal_program_uniformStruct_parse(const GLuint program, const uint16_t uniformCount, GLint* indicies, HashTable* table) {
+static void internal_program_uniformStruct_parse(const GLuint program, const uint16_t uniformCount, GLint* indicies, UniformBuffer* uniformBuffer) {
     
     uint16_t ValidStructCount = 0;
 
@@ -628,7 +676,6 @@ static void internal_program_uniformStruct_parse(const GLuint program, const uin
         assert(nextStructName);
         memcpy(nextStructName, buffer, nameEnd - buffer);
 
-
         if (!structName) {
             structName = (char*)calloc(1, structNameLength);
             assert(structName);
@@ -638,12 +685,13 @@ static void internal_program_uniformStruct_parse(const GLuint program, const uin
         // found a different struct or end of uniforms.
         if (strcmp(structName, nextStructName) && structMembers != 0) {
             // do insert and reset counters.
-            UniformStruct* newStruct = internal_UniformStruct_create(structName, structIdent - buffer + 1, infoArray, structMembers, structElements / structMembers);
-            HashTable_insert(table, structName, newStruct);
-                
+            // TODO: element count is probably wrong here too. Fix it.
+            //printf("\nstructElements:%d\n", structElements);
+            UniformStruct* newStruct = internal_UniformStruct_create(structName, structIdent - buffer + 1, infoArray, structMembers, structElements / structMembers, UniformBuffer_get_shared(uniformBuffer));
+            HashTable_insert(uniformBuffer->UniformStructs, structName, newStruct);
             ValidStructCount++;
             structMembers = 0;
-            structElements = 0;
+            structElements = 1;
             structName = NULL;
         }
             
@@ -671,8 +719,10 @@ static void internal_program_uniformStruct_parse(const GLuint program, const uin
 
     // final check to ensure the last index gets uploaded.
     if (structMembers != 0) {
-        UniformStruct* newStruct = internal_UniformStruct_create(structName, structIdent - buffer + 1, infoArray, structMembers, structElements / structMembers);
-        HashTable_insert(table, structName, newStruct);
+        //TODO: element count is wrong here. fix it.
+        //printf("\nstructElements:%d\n", structElements);
+        UniformStruct* newStruct = internal_UniformStruct_create(structName, structIdent - buffer + 1, infoArray, structMembers, structElements / structMembers, UniformBuffer_get_shared(uniformBuffer));
+        HashTable_insert(uniformBuffer->UniformStructs, structName, newStruct);
         ValidStructCount++;
         structMembers = 0;
         structElements = 0;
@@ -680,7 +730,7 @@ static void internal_program_uniformStruct_parse(const GLuint program, const uin
     }
 
     // Resize the table to fit the actual number found.
-    HashTable_resize(table, ValidStructCount);
+    HashTable_resize(uniformBuffer->UniformStructs, ValidStructCount);
 
     if (!indiciesProvided) free(indicies);
     free(nextStructName);

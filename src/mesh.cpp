@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <cstdlib>
+#include <cstdio>
 #include <cassert>
 #include <iostream>
 #include <fstream>
@@ -15,17 +16,17 @@
 #include "renderable.h"
 #include "par_shapes.h"
 
-const uint16_t LINE_BUFFER_SIZE = 512;
-const uint16_t MAX_ITERATIONS = 0xffff;
+const uint32_t LINE_BUFFER_SIZE = 512;
+const uint32_t MAX_ITERATIONS = 0xffff;
 
 
-StaticMesh::StaticMesh(uint16_t materialCount) : MaterialCount(materialCount) {
+StaticMesh::StaticMesh(uint32_t materialCount) : MaterialCount(materialCount) {
     meshRenders = new Mesh[materialCount];
     materials = new Material*[materialCount];
     Transform = MatrixIdentity();
 }
 
-StaticMesh::StaticMesh(uint16_t materialCount, Matrix transform) : MaterialCount(materialCount), Transform(transform) {
+StaticMesh::StaticMesh(uint32_t materialCount, Matrix transform) : MaterialCount(materialCount), Transform(transform) {
     meshRenders = new Mesh[materialCount];
     materials = new Material*[materialCount];
 }
@@ -49,7 +50,7 @@ StaticMesh::~StaticMesh() {
     meshRenders = nullptr;
 }
 
-void StaticMesh::SetMaterial(Material* material, uint16_t index) {
+void StaticMesh::SetMaterial(Material* material, uint32_t index) {
 
     if(this == nullptr || index >= MaterialCount) {
         return;
@@ -68,7 +69,7 @@ void StaticMesh::Draw() const {
     }
 
     // run a draw call for each material.
-    for (uint16_t i = 0; i < MaterialCount; i++) {
+    for (uint32_t i = 0; i < MaterialCount; i++) {
         DrawRenderable(&meshRenders[i], materials[i], &Transform);
     }
 }
@@ -115,7 +116,7 @@ Vector3 Vector3FromString(const std::string data) {
 	return vector;
 }
 
-void parseFace(std::vector<uint16_t>* vi, std::vector<uint16_t>* ti, std::vector<uint16_t>* ni, std::vector<std::string> segmentList) {
+void parseFace(std::vector<uint32_t>* vi, std::vector<uint32_t>* ti, std::vector<uint32_t>* ni, std::vector<std::string> segmentList) {
     
     // For each of the three points in the face,
     for (int i = 0; i < segmentList.size(); i++) {
@@ -141,7 +142,7 @@ void parseFace(std::vector<uint16_t>* vi, std::vector<uint16_t>* ti, std::vector
     }
 }
 
-int parseFaceIndicies(std::vector<uint16_t>* vi, std::vector<uint16_t>* ti, std::vector<uint16_t>* ni, const std::string data) {
+int parseFaceIndicies(std::vector<uint32_t>* vi, std::vector<uint32_t>* ti, std::vector<uint32_t>* ni, const std::string data) {
 	/* This function parses an incoming wavefront file face data and added the indicies to the corresponding lists. 
 	Faces are stored as f n/n/n n/n/n n/n/n where the subsets are the indicies of the vertex, texture coordinate, and normal. */
 
@@ -182,35 +183,38 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
         file.close();
     }
     catch (std::ifstream::failure& e) {
-        std::cout << "Wavefront (" << path << ") not found: " << e.what() << std::endl;
+        printf("Error Loading Wavefront Mesh: \"%s\" Could not find file!", path);
         return nullptr;
     }
 
     // Verify that the file extension is obj.
     const char* ext = strrchr(path, '.');
-    assert(strcmp(ext, ".obj") == 0 || strcmp(ext, ".OBJ") == 0);
+    if (strcmp(ext, ".obj") != 0 && strcmp(ext, ".OBJ") != 0) {
+        printf("Error Loading Wavefront Mesh: \"%s\" File extension was not .obj or .OBJ", path);
+        return nullptr;
+    }
 
     char lineBuffer[LINE_BUFFER_SIZE];
     char identifyer[2] = { '\0', '\0' };
-    uint16_t lineCount = 0;
-    uint16_t materialCount = 0;
+    uint32_t lineCount = 0;
+    uint32_t materialCount = 0;
 
     std::string ObjectName = "None";
-    std::vector<uint16_t> surfaceSplitIndecies;
-	std::vector<uint16_t> vi; 
-	std::vector<uint16_t> ti; 
-	std::vector<uint16_t> ni; 
+    std::vector<uint32_t> surfaceSplitIndecies;
+	std::vector<uint32_t> vi; 
+	std::vector<uint32_t> ti; 
+	std::vector<uint32_t> ni; 
 	
 	std::vector<Vector3> vertexList;
 	std::vector<Vector3> normalList;
 	std::vector<Vector2> tCoordList;
 
     stream.seekp(0);
-    uint16_t iteration = 0;
-    uint16_t indiciesParced = 0;
+    uint32_t iteration = 0;
+    uint32_t indiciesParced = 0;
 	
-    while (!stream.eof() || ++iteration < MAX_ITERATIONS) {
-    
+    while (!stream.eof()) {
+        iteration++;
     	// Copy the line into the buffer:
     	stream.getline(lineBuffer, LINE_BUFFER_SIZE);       // Get the current line from the file.
     	memcpy(identifyer, lineBuffer, 2 * sizeof(char));   // Copy the first two characters from the line buffer.
@@ -263,6 +267,8 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
             break;
         }
 	}
+
+    std::cout << iteration << std::endl;
     
     if (surfaceSplitIndecies.empty()) {
         surfaceSplitIndecies.push_back(indiciesParced);
@@ -276,10 +282,19 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
     // Assert that all index list are the same size.
     assert(vi.size() == ni.size() && ni.size() == ti.size());
 
-    std::vector<Vector3> normalArray(vi.size(), Vector3{ 0.0f, 1.0f, 0.0f });
-    std::vector<Vector2> tCoordArray(vi.size(), Vector2{ 0.0f, 0.0f });
 
-    for (uint16_t i = 0; i < vi.size(); i++) {
+    //std::vector<uint32_t> occurances(vi.size(), 0);
+    //std::vector<uint32_t> matchingTcoord(vi.size(), 0);
+    //
+    //for (uint32_t i = 0; i < vi.size(); i++) {
+    //    occurances[vi[i]]++;
+    //}
+
+    std::vector<Vector3> normalArray(vertexList.size(), Vector3{ 0.0f, 1.0f, 0.0f });
+    std::vector<Vector2> tCoordArray(vertexList.size(), Vector2{ 0.0f, 0.0f });
+
+
+    for (uint32_t i = 0; i < vi.size(); i++) {
         normalArray[vi[i]] = normalList[ni[i]];
         tCoordArray[vi[i]] = tCoordList[ti[i]];
     }
@@ -291,9 +306,9 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
     UploadMesh(&(newMesh->meshRenders[0]), &vi[0], &vertexList[0], &normalArray[0], &tCoordArray[0], surfaceSplitIndecies[0], vertexList.size());
     
     //starting at the first material split, upload a sub-mesh referencing the buffers from the first mesh.
-    uint16_t currentMaterialElementIndex = 0;
+    uint32_t currentMaterialElementIndex = 0;
 
-    for (uint16_t i = 1; i < materialCount; i++) {
+    for (uint32_t i = 1; i < materialCount; i++) {
         // Copy the vbo, tbo, and nbo from the first mesh which holds all the data.
         currentMaterialElementIndex += surfaceSplitIndecies[i];
         UploadSubMesh(&newMesh->meshRenders[i], &newMesh->meshRenders[0], &vi[currentMaterialElementIndex], surfaceSplitIndecies[i]);
@@ -307,7 +322,7 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
 //par_shapes_compute_normals(parMesh);
 
 
-StaticMesh* CreateStaticMeshFromRawData(const uint16_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const  Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
+StaticMesh* CreateStaticMeshFromRawData(const uint32_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const  Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
     UploadMesh(&(newMesh->meshRenders[0]), indeciesArray, vertexBufferArray, normalBufferArray, tCoordArray, indecies, vertecies);
     return newMesh;

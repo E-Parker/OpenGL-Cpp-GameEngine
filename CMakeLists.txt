@@ -20,7 +20,7 @@ find_package(GLFW3 REQUIRED)
 # Include header files
 include_directories("${CMAKE_SOURCE_DIR}/inc")
 
-# Gather all cpp and c files from the soruce directory
+# Gather all cpp and c files from the source directory
 file(GLOB_RECURSE SOURCES 
 	"${CMAKE_SOURCE_DIR}/src/*.cpp"
 	"${CMAKE_SOURCE_DIR}/src/*.c"
@@ -38,7 +38,7 @@ if(WIN32)
 file(GLOB_RECURSE SHADERS "${CMAKE_SOURCE_DIR}/assets/shaders*")
 file(GLOB_RECURSE ASSETS "${CMAKE_SOURCE_DIR}/assets/*")
 
-# Make Shaders visable in the editor.
+# Make Shaders visible in the editor.
 source_group("Shaders" FILES ${SHADERS})
 
 # Set default project to this one in visual studio.
@@ -47,7 +47,7 @@ set_property( DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJEC
 # Add source files to the executable so that the linker knows where to look for them
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
-# Link together the external libraries and make it acessable to the compiler
+# Link together the external libraries and make it accessible to the compiler
 target_link_libraries(
 	${PROJECT_NAME} 
 	${GLFW3_LIBRARIES}
@@ -69,7 +69,7 @@ else()
 # Add source files to the executable so that the linker knows where to look for them
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-# Link together the external libraries and make it acessable to the compiler
+# Link together the external libraries and make it accessible to the compiler
 target_link_libraries(
 	${PROJECT_NAME} 
 	${GLFW3_LIBRARIES}

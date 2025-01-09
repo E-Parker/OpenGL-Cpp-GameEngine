@@ -13,7 +13,7 @@ typedef struct Font {
 
 	// Font Table information:
 	char* alias = nullptr;
-	uint16_t references = 0;
+	uint32_t references = 0;
 
 	// Font atlas information:
 	Material* material = nullptr;
@@ -23,11 +23,11 @@ typedef struct Font {
 	stbtt_aligned_quad* alignedQuads = nullptr;
 
 	Texture* textureAtlas = nullptr;
-	uint16_t CharactersLoaded = 0;
-	uint16_t AtlasSize = 0;
+	uint32_t CharactersLoaded = 0;
+	uint32_t AtlasSize = 0;
 	float FontSize = 0.0f;
 
-	Font(Material* material, uint16_t charactersToLoad, uint16_t atlasSize);
+	Font(Material* material, uint32_t charactersToLoad, uint32_t atlasSize);
 	~Font();
 
 } Font;

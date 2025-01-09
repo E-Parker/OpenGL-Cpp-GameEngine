@@ -13,6 +13,13 @@ extern "C" {
 
 // Standard Buffer Size is the maximum size any alias can be.
 #define STANDARD_BUFFER_SIZE = 36
+
+//#define ASSET_IS_MIN_TYPE(Asset)  ((*((min_asset*)Asset)->Type) == 0xff)
+//#define ASSET_IS_TYPE(Asset, Type) ((*((min_asset*)Asset)->Type) == Type)
+//#define GET_ASSET_TRANSFORM(Asset) ((Matrix*)(asset*)Asset->Transform)
+//#define GET_ASSET_PARENT(Asset) ((void*)((asset*)Asset)->Parent)
+
+// This is undefined behavior, but also this is the only way to trick c++ into compiling since the old style pointer casts don't work the same.
 #define ASSET_IS_MIN_TYPE(Asset)  ((*(((uint8_t*)Asset) + 45)) == 0xff)
 #define ASSET_IS_TYPE(Asset, Type) ((*(((uint8_t*)Asset) + 45)) == Type)
 #define GET_ASSET_TRANSFORM(Asset) ((Matrix*)(((uint8_t*)Asset) + 48))
@@ -46,8 +53,8 @@ typedef struct asset {
     union Data {uint8_t Type = type;    /* 44   |   x           _- Only use the upper 24 bits, the first 8 represent type.    */  \
     uint32_t Flags;};                   /* 44   |   4       <--+-- General purpose bit flags. useful for keeping object state.*/  \
     Matrix Transform = MatrixIdentity();/* 48   |   64      <----- 4 * 4 matrix, represents the local position.               */  \
-    void* Parent = nullptr;             /* 112  |   8       <----- pointer to the parent node.                                */  \
-    void** Children = nullptr;          /* 120  |   8       <----- pointer to array of child nodes.                           */  \
+    void* Parent = NULL;                /* 112  |   8       <----- pointer to the parent node.                                */  \
+    void** Children = NULL;             /* 120  |   8       <----- pointer to array of child nodes.                           */  \
     
     ASSET_BODY(0x01);
 

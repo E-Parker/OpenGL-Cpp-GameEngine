@@ -13,7 +13,7 @@
 #include "texture.h"
 
 
-Material::Material(const char* vertexProgramPath, const char* fragmentProgramPath, const uint16_t numberOfTextures, const GLenum cullFuncton, const GLenum depthFunction) {
+Material::Material(const char* vertexProgramPath, const char* fragmentProgramPath, const uint32_t numberOfTextures, const GLenum cullFuncton, const GLenum depthFunction) {
     TexturesUsed = numberOfTextures;
     CullFunction = cullFuncton;
     DepthFunction = depthFunction;
@@ -57,7 +57,7 @@ Material::~Material() {
 }
 
 
-void SetTextureFromPointer(const Material* material, Texture* texture, uint16_t index){
+void SetTextureFromPointer(const Material* material, Texture* texture, uint32_t index){
     /* Manually set a texture from a texture pointer. AVOID USING!!!
     The textures set this way will be UNAMANGED and must be freed MANUALLY. */
 
@@ -85,7 +85,7 @@ void SetTextureFromPointer(const Material* material, Texture* texture, uint16_t 
     texture->references++;
 }
 
-void SetTextureFromAlias(const Material* material, const char* alias, uint16_t index) {
+void SetTextureFromAlias(const Material* material, const char* alias, uint32_t index) {
     /* Set a material's texture at the given index, by the texture's alias. */
 
     if (material == nullptr) {
@@ -99,7 +99,7 @@ void SetTextureFromAlias(const Material* material, const char* alias, uint16_t i
     }
 
     Texture* texture = nullptr;
-    TextureManager::FindTexture(alias, &texture);
+    FindTexture(alias, &texture);
 
     if (texture == nullptr) {
         std::cout << "Error setting Material Texture: \"" << alias << "\" At index: " << index << ". The texture could not be found." << std::endl;
@@ -129,10 +129,10 @@ void BindMaterial(const Material* material){
     glDepthFunc(material->DepthFunction);
 
     // Set the active texture for each texture in the material.
-    for (uint16_t i = 0; i < material->TexturesUsed; i++) {
+    for (uint32_t i = 0; i < material->TexturesUsed; i++) {
+        glActiveTexture(GL_TEXTURE0 + i);
         if (material->Textures[i] != nullptr) {
-            glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, material->Textures[i]->ID);
+            glBindTexture(material->Textures[i]->type, material->Textures[i]->ID);
         }
     }
 }

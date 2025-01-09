@@ -51,13 +51,13 @@ void FreeSubMesh(Mesh* mesh) {
 }
 
 
-void UploadMesh(Mesh* mesh, const  uint16_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
+void UploadMesh(Mesh* mesh, const  uint32_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
     /* Uploading mesh to GPU. points and normalBuffer must exist for the upload to work.
     tCoord data and face data is optional. */
 
     size_t vertexBytes = vertecies * sizeof(Vector3);
     size_t tCoordBytes = vertecies * sizeof(Vector2);
-    size_t indexBytes = indecies * sizeof(uint16_t);
+    size_t indexBytes = indecies * sizeof(uint32_t);
     size_t normalBytes = vertexBytes;
 
     mesh->indexBytes = indexBytes;
@@ -102,10 +102,10 @@ void UploadMesh(Mesh* mesh, const  uint16_t* indeciesArray, const  Vector3* vert
 
 }
 
-void UploadSubMesh(Mesh* mesh, Mesh* source, const uint16_t* indeciesArray, const uint16_t indecies) {
+void UploadSubMesh(Mesh* mesh, Mesh* source, const uint32_t* indeciesArray, const uint32_t indecies) {
     /* variant of UploadMesh for meshes that share vertices but have a different element buffer. */
 
-    size_t indexBytes = indecies * sizeof(uint16_t);
+    size_t indexBytes = indecies * sizeof(uint32_t);
     mesh->indexBytes = indexBytes;
 
     if (mesh->VertexAttributeObject == GL_NONE) {
@@ -150,7 +150,7 @@ void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* tr
     // Bind the VAO and draw the elements.
     glBindVertexArray(mesh->VertexAttributeObject);
     glUniformMatrix4fv(u_mvp, 1, GL_FALSE, ToFloat16(*transform).v);
-    glDrawElements(GL_TRIANGLES, mesh->indexBytes, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, mesh->indexBytes, GL_UNSIGNED_INT, 0);
 
     // unbind the VAO.
     glBindVertexArray(GL_NONE);

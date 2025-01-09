@@ -5,424 +5,124 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	
-#include <stdint.h>
 
-const uint64_t size_from_gl_type(GLenum type);
-void upload_from_gl_type(GLint location, GLenum type, GLint elements, void* data);
-
-
-// Define analogues for all GLSL types not specified by glad.
-// These will match up exactly with the upload functions provided by OpenGL
-// kinda nasty that i have to do this, but I would really rather not pass around
-// arrays without any kind of type information.
+// MATH CONSTANT DEFINITIONS:
+//
 //
 
-typedef struct GLvec2f{
-	GLfloat X;
-	GLfloat Y;
-} GLvec2f;
+#ifndef PI
+#define PI 3.14159265358979323846f
+#endif
 
-typedef struct GLvec3f {
-	GLfloat X;
-	GLfloat Y;
-	GLfloat Z;
-} GLvec3f;
+#ifndef EPSILON
+#define EPSILON 0.000001f
+#endif
 
-typedef struct GLvec4f {
-	GLfloat X;
-	GLfloat Y;
-	GLfloat Z;
-	GLfloat W;
-} GLvec4f;
+#ifndef DEG2RAD
+#define DEG2RAD (PI/180.0f)
+#endif
 
+#ifndef RAD2DEG
+#define RAD2DEG (180.0f/PI)
+#endif
+
+
+// GLSL TYPE ANALOGUES:
+//
+//
+
+#define vecX(T, vecAdress) (((T*)vecAdress)[0])
+#define vecY(T, vecAdress) (((T*)vecAdress)[1])
+#define vecZ(T, vecAdress) (((T*)vecAdress)[2])
+#define vecW(T, vecAdress) (((T*)vecAdress)[3])
+
+typedef GLfloat vec2[2];
+typedef GLfloat vec3[3];
+typedef GLfloat vec4[4];
+typedef GLfloat quaternion[4];
+
+typedef GLint vec2i[2];
+typedef GLint vec3i[3];
+typedef GLint vec4i[4];
+
+typedef GLuint vec2ui[2];
+typedef GLuint vec3ui[3];
+typedef GLuint vec4ui[4];
+
+typedef GLboolean vec2b[2];
+typedef GLboolean vec3b[3];
+typedef GLboolean vec4b[4];
+
+typedef GLfloat mat2[4];
+typedef GLfloat mat2x3[6];
+typedef GLfloat mat2x4[8];
+typedef GLfloat mat3[9];
+typedef GLfloat mat3x2[6];
+typedef GLfloat mat3x4[9];
+typedef GLfloat mat4[16];
+typedef GLfloat mat4x2[8];
+typedef GLfloat mat4x3[12];
 
 /*
-typedef struct GLvec2d {
-	GLdouble X;
-	GLdouble Y;
-} GLvec2d;
+const vec2 V2_RIGHT = {1.0f, 0.0f};
+const vec2 V2_UP = { 0.0f, 1.0f };
+const vec2 V2_ZERO = { 0.0f, 0.0f };
+const vec2 V2_ONE = { 1.0f, 1.0f };
 
-typedef struct GLvec3d {
-	GLdouble X;
-	GLdouble Y;
-	GLdouble Z;
-} GLvec3d;
+const vec3 V3_RIGHT = { 1.0f, 0.0f, 0.0f };
+const vec3 V3_UP = { 0.0f, 1.0f, 0.0f };
+const vec3 V3_FORWARD = { 0.0f, 0.0f, 1.0f };
+const vec3 V3_LEFT = { -1.0f, 0.0f, 0.0f };
+const vec3 V3_DOWN = { 0.0f, -1.0f, 0.0f };
+const vec3 V3_BACKWARD = { 0.0f, 0.0f, -1.0f };
 
-typedef struct GLvec4d {
-	GLdouble X;
-	GLdouble Y;
-	GLdouble Z;
-	GLdouble W;
-} GLvec4d;
+const vec3 V3_ZERO = { 0.0f, 0.0f, 0.0f };
+const vec3 V3_ONE = { 1.0f, 1.0f, 1.0f };
 */
 
+const GLuint size_from_gl_type(const GLenum type);
+void upload_from_gl_type(const GLint location, const GLenum type, const GLint elements, const void* data);
+
+#define vec2Mul(a, b) { a[0] * b[0], a[1] * b[1] }
+#define vec3Mul(a, b) { a[0] * b[0], a[1] * b[1], a[2] * b[2] }
+#define vec4Mul(a, b) { a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3] }
+
+#define vec2Scale(v, scale) { v[0] * scale, v[1] * scale }
+#define vec3Scale(v, scale) { v[0] * scale, v[1] * scale, v[2] * scale }
+#define vec4Scale(v, scale) { v[0] * scale, v[1] * scale, v[2] * scale, v[3] * scale }
+
+#define vec2Equal(a, b) (a[0] == b[0] && a[1] == b[1])
+#define vec3Equal(a, b) (a[0] == b[0] && a[1] == b[1] && a[2] == b[2])
+#define vec4Equal(a, b) (a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3])
+#define quaternionEqual(a, b) vec4Equal(a, b)
+
+double vec2magnitude(const vec2 v);
+double vec3magnitude(const vec3 v);
+double vec4magnitude(const vec4 v);
+
+#define mat4copy(to, from) do{\
+to[0] = from[0];\
+to[1] = from[1];\
+to[2] = from[2];\
+to[3] = from[3];\
+to[4] = from[4];\
+to[5] = from[5];\
+to[6] = from[6];\
+to[7] = from[7];\
+to[8] = from[8];\
+to[9] = from[9];\
+to[10] = from[10];\
+to[11] = from[11];\
+to[12] = from[12];\
+to[13] = from[13];\
+to[14] = from[14];\
+to[15] = from[15];\
+}while(0)\
+
+void quaternion_mat4(const quaternion q, mat4 out);
+
+void mat4mul(const mat4 a, const mat4 b, mat4 out);
 
-typedef struct GLvec2i {
-	GLint X;
-	GLint Y;
-} GLvec2i;
-
-typedef struct GLvec3i {
-	GLint X;
-	GLint Y;
-	GLint Z;
-} GLvec3i;
-
-typedef struct GLvec4i {
-	GLint X;
-	GLint Y;
-	GLint Z;
-	GLint W;
-} GLvec4i;
-
-
-typedef struct GLvec2ui {
-	GLuint X;
-	GLuint Y;
-} GLvec2ui;
-
-typedef struct GLvec3ui {
-	GLuint X;
-	GLuint Y;
-	GLuint Z;
-} GLvec3ui;
-
-typedef struct GLvec4ui {
-	GLuint X;
-	GLuint Y;
-	GLuint Z;
-	GLuint W;
-} GLvec4ui;
-
-
-typedef struct GLvec2b {
-	GLboolean X;
-	GLboolean Y;
-} GLvec2b;
-
-typedef struct GLvec3b {
-	GLboolean X;
-	GLboolean Y;
-	GLboolean Z;
-} GLvec3b;
-
-typedef struct GLvec4b {
-	GLboolean X;
-	GLboolean Y;
-	GLboolean Z;
-	GLboolean W;
-} GLvec4b;
-
-
-typedef struct GLmat2f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-
-	GLfloat m2;
-	GLfloat m3;
-
-} GLmat2f;
-
-typedef struct GLmat2x3f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-
-	GLfloat m2;
-	GLfloat m3;
-
-	GLfloat m4;
-	GLfloat m5;
-
-} GLmat2x3f;
-
-typedef struct GLmat2x4f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-
-	GLfloat m2;
-	GLfloat m3;
-
-	GLfloat m4;
-	GLfloat m5;
-
-	GLfloat m6;
-	GLfloat m7;
-
-} GLmat2x4f;
-
-typedef struct GLmat3f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-	GLfloat m2;
-
-	GLfloat m3;
-	GLfloat m4;
-	GLfloat m5;
-
-	GLfloat m6;
-	GLfloat m7;
-	GLfloat m8;
-
-} GLmat3f;
-
-typedef struct GLmat3x2f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-	GLfloat m2;
-
-	GLfloat m3;
-	GLfloat m4;
-	GLfloat m5;
-
-} GLmat3x2f;
-
-typedef struct GLmat3x4f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-	GLfloat m2;
-
-	GLfloat m3;
-	GLfloat m4;
-	GLfloat m5;
-
-	GLfloat m6;
-	GLfloat m7;
-	GLfloat m8;
-
-	GLfloat m9;
-	GLfloat m10;
-	GLfloat m11;
-
-} GLmat3x4f;
-
-typedef struct GLmat4f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-	GLfloat m2;
-	GLfloat m3;
-
-	GLfloat m4;
-	GLfloat m5;
-	GLfloat m6;
-	GLfloat m7;
-	
-	GLfloat m8;
-	GLfloat m9;
-	GLfloat m10;
-	GLfloat m11;
-
-	GLfloat m12;
-	GLfloat m13;
-	GLfloat m14;
-	GLfloat m15;
-
-} GLmat4f;
-
-typedef struct GLmat4x2f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-	GLfloat m2;
-	GLfloat m3;
-
-	GLfloat m4;
-	GLfloat m5;
-	GLfloat m6;
-	GLfloat m7;
-
-} GLmat4x2f;
-
-typedef struct GLmat4x3f {
-	//GLboolean transpose;
-
-	GLfloat m0;
-	GLfloat m1;
-	GLfloat m2;
-	GLfloat m3;
-
-	GLfloat m4;
-	GLfloat m5;
-	GLfloat m6;
-	GLfloat m7;
-
-	GLfloat m8;
-	GLfloat m9;
-	GLfloat m10;
-	GLfloat m11;
-
-} GLmat4x3f;
-
-
-/*
-typedef struct GLmat2d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-
-	GLdouble m2;
-	GLdouble m3;
-
-} GLmat2d;
-
-typedef struct GLmat2x3d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-
-	GLdouble m2;
-	GLdouble m3;
-
-	GLdouble m4;
-	GLdouble m5;
-
-} GLmat2x3d;
-
-typedef struct GLmat2x4d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-
-	GLdouble m2;
-	GLdouble m3;
-
-	GLdouble m4;
-	GLdouble m5;
-
-	GLdouble m6;
-	GLdouble m7;
-
-} GLmat2x4d;
-
-typedef struct GLmat3d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-	GLdouble m2;
-
-	GLdouble m3;
-	GLdouble m4;
-	GLdouble m5;
-
-	GLdouble m6;
-	GLdouble m7;
-	GLdouble m8;
-
-} GLmat3d;
-
-typedef struct GLmat3x2d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-	GLdouble m2;
-
-	GLdouble m3;
-	GLdouble m4;
-	GLdouble m5;
-
-} GLmat3x2d;
-
-typedef struct GLmat3x4d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-	GLdouble m2;
-
-	GLdouble m3;
-	GLdouble m4;
-	GLdouble m5;
-
-	GLdouble m6;
-	GLdouble m7;
-	GLdouble m8;
-
-	GLdouble m9;
-	GLdouble m10;
-	GLdouble m11;
-
-} GLmat3x4d;
-
-typedef struct GLmat4d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-	GLdouble m2;
-	GLdouble m3;
-
-	GLdouble m4;
-	GLdouble m5;
-	GLdouble m6;
-	GLdouble m7;
-
-	GLdouble m8;
-	GLdouble m9;
-	GLdouble m10;
-	GLdouble m11;
-
-	GLdouble m12;
-	GLdouble m13;
-	GLdouble m14;
-	GLdouble m15;
-
-} GLmat4d;
-
-typedef struct GLmat4x2d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-	GLdouble m2;
-	GLdouble m3;
-
-	GLdouble m4;
-	GLdouble m5;
-	GLdouble m6;
-	GLdouble m7;
-
-} GLmat4x2d;
-
-typedef struct GLmat4x3d {
-	//GLboolean transpose;
-
-	GLdouble m0;
-	GLdouble m1;
-	GLdouble m2;
-	GLdouble m3;
-
-	GLdouble m4;
-	GLdouble m5;
-	GLdouble m6;
-	GLdouble m7;
-
-	GLdouble m8;
-	GLdouble m9;
-	GLdouble m10;
-	GLdouble m11;
-
-} GLmat4x3d;
-*/
 #ifdef __cplusplus
 }
 #endif

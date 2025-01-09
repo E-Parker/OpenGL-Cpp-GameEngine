@@ -8,7 +8,7 @@ typedef struct Material {
 
 public:
 
-    uint16_t TexturesUsed = 0;
+    uint32_t TexturesUsed = 0;
     Texture** Textures;
 
     HashTable* Uniforms;
@@ -17,11 +17,11 @@ public:
     GLenum CullFunction = GL_BACK;
     GLenum DepthFunction = GL_LESS;
 
-    Material(const char* vertexProgramPath, const char* fragmentProgramPath, const uint16_t numberOfTextures, const GLenum cullFuncton, const GLenum depthFunction);
+    Material(const char* vertexProgramPath, const char* fragmentProgramPath, const uint32_t numberOfTextures, const GLenum cullFuncton, const GLenum depthFunction);
     ~Material();
 
 } Material;
 
-void SetTextureFromPointer(const Material* material, Texture* texture, uint16_t index);
-void SetTextureFromAlias(const Material* material, const char* alias, uint16_t index);
+void SetTextureFromPointer(const Material* material, Texture* texture, uint32_t index);
+void SetTextureFromAlias(const Material* material, const char* alias, uint32_t index);
 void BindMaterial(const Material* material);

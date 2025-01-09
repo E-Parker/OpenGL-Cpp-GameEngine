@@ -48,7 +48,7 @@ typedef struct Uniform {
     uint32_t Offset;    // Only meaningful for uniforms that are part of structures.
     uint32_t Elements;  // value of 1 means it is not an array.
     uint64_t Size;      // byte size of each element.
-    uint64_t Stride;    // usually zero.
+    uint64_t Stride;    // zero unless the uniform is part of a structure.
     void* Data;
 } Uniform;
 
@@ -74,9 +74,10 @@ typedef struct UniformStruct {
     void* Data;
 } UniformStruct;
 
-UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLength, const UniformInformation* info, const uint16_t memberCount, const uint64_t elements);
+UniformStruct* internal_UniformStruct_create(char* alias, const uint16_t aliasLength, const UniformInformation* info, const uint16_t memberCount, const uint64_t elements, void* shared);
 
 void UniformStruct_get_member(UniformStruct* uniformStruct, const char* alias, Uniform** outVal);
+void UniformStruct_set_member_at(UniformStruct* uniformStruct, const char* alias, uint64_t i, void* data);
 void UniformStruct_set_member(UniformStruct* uniformStruct, const char* alias, void* data);
 
 //  SHADER UNIFORM BUFFER
@@ -104,8 +105,8 @@ void internal_UniformBuffer_buffer(const UniformBuffer* buffer);
 void UniformBuffer_get_Uniform(const UniformBuffer* buffer, const char* alias, Uniform** outVal);
 void UniformBuffer_get_Struct(const UniformBuffer* buffer, const char* alias, UniformStruct** outVal);
 
-void internal_UniformBuffer_set_Struct(const UniformBuffer* buffer, const char* alias, const char* memberAlias, void* data);
-void internal_UniformBuffer_set_Struct_at(const UniformBuffer* buffer, const char* alias, const char* memberAlias, int i, void* data);
+void internal_UniformBuffer_set_Struct(UniformBuffer* buffer, const char* alias, const char* memberAlias, void* data);
+void internal_UniformBuffer_set_Struct_at(UniformBuffer* buffer, const char* alias, const char* memberAlias, int i, void* data);
 
 UniformBuffer* UniformBuffer_get_self(const char* alias);
 void UniformBuffer_update_all();
@@ -138,7 +139,7 @@ GLint internal_Program_buffer_count(const GLuint program);
 void internal_Program_uniform_parse(const GLuint program, HashTable* table);
 void internal_Program_buffer_parse(const GLuint program, HashTable* table);
 static void internal_Program_buffer_uniform_parse(const GLuint program, const uint16_t uniformCount, const GLint* indicies, UniformBuffer* uniformBuffer);
-static void internal_program_uniformStruct_parse(const GLuint program, const uint16_t uniformCount, GLint* indicies, HashTable* table);
+static void internal_program_uniformStruct_parse(const GLuint program, const uint16_t uniformCount, GLint* indicies, UniformBuffer* uniformBuffer);
 
 Shader* Shader_create(const GLuint program, const char* alias);
 void Shader_destroy(Shader** shader);

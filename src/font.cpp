@@ -28,12 +28,11 @@ static HashTable* FontTable = HashTable_create(Font, 32);
 #define DEFAULT_START_CHARACTER 31
 
 
-Font::Font(Material* material, uint16_t charactersToLoad, uint16_t atlasSize) : material(material), CharactersLoaded(charactersToLoad), AtlasSize(atlasSize) {
-    textureAtlas = new Texture();
+Font::Font(Material* material, uint32_t charactersToLoad, uint32_t atlasSize) : material(material), CharactersLoaded(charactersToLoad), AtlasSize(atlasSize) {
+    internal_Texture_create(textureAtlas, GL_TEXTURE_2D, GL_LINEAR);
     textureAtlas->width = AtlasSize;
     textureAtlas->height = AtlasSize;
     textureAtlas->channels = 1;
-    textureAtlas->filterType = GL_LINEAR;
     fontAtlasTextureData = new uint8_t[atlasSize * atlasSize];
     packedChars = new stbtt_packedchar[CharactersLoaded];
     alignedQuads = new stbtt_aligned_quad[CharactersLoaded];
@@ -106,7 +105,7 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
     
     Font* font = nullptr;
 
-    // try to find the font in the table.
+    //   to find the font in the table.
     HashTable_find(FontTable, alias, &font);
 
     // if the font doesn't already exist, make a new one, and return that instead.
@@ -115,7 +114,7 @@ Font* CreateFont(const char* path, const char* alias, Material* material, const 
     }
 
     font = FontManager::InternalLoadFont(path, material, pointSize);
-    TextureManager::InternalCreateTexture(font->textureAtlas, false, alias, GL_RED, GL_RED, font->fontAtlasTextureData, false);
+    InternalCreateTexture(font->textureAtlas, false, alias, GL_RED, GL_RED, font->fontAtlasTextureData, false);
     SetTextureFromPointer(material, font->textureAtlas, 0);
 
     if (font == nullptr) {
@@ -231,17 +230,17 @@ void SetText(TextRender* textRender, const char* string, int x, int y, const flo
     char* character = const_cast<char*>(string);
 
     // Determine the size of the mesh.
-    uint16_t VertexBufferSize = static_cast<uint16_t>((bufferEnd - string) * 4);
-    uint16_t ElementBufferSize = static_cast<uint16_t>((bufferEnd - string) * 6);
+    uint32_t VertexBufferSize = static_cast<uint32_t>((bufferEnd - string) * 4);
+    uint32_t ElementBufferSize = static_cast<uint32_t>((bufferEnd - string) * 6);
 
     // Make enough vectors to store each face for each quad generated.
     Vector3* vertices = new Vector3[VertexBufferSize];
     Vector3* normals = new Vector3[VertexBufferSize];
     Vector2* tChoords = new Vector2[VertexBufferSize];
-    uint16_t* elements = new uint16_t[ElementBufferSize];
+    uint32_t* elements = new uint32_t[ElementBufferSize];
 
-    uint16_t vertexIndex = 0;
-    uint16_t elementIndex = 0;
+    uint32_t vertexIndex = 0;
+    uint32_t elementIndex = 0;
 
     for (; character < bufferEnd; character++) {
        
@@ -310,20 +309,20 @@ void SetText(TextRender* textRender, const char* string, int x, int y, const flo
             { alignedQuad->s1, alignedQuad->t1 },
         };
 
-        uint16_t glyphElements[6]{
+        uint32_t glyphElements[6]{
             vertexIndex,
-            static_cast<uint16_t>(vertexIndex + 1),
-            static_cast<uint16_t>(vertexIndex + 2),
+            static_cast<uint32_t>(vertexIndex + 1),
+            static_cast<uint32_t>(vertexIndex + 2),
             vertexIndex,
-            static_cast<uint16_t>(vertexIndex + 2),
-            static_cast<uint16_t>(vertexIndex + 3),
+            static_cast<uint32_t>(vertexIndex + 2),
+            static_cast<uint32_t>(vertexIndex + 3),
         };
 
         // Write the current quad into the vertices and tChoords.
         memcpy(&vertices[vertexIndex], glyphVertices, 4 * sizeof(Vector3));
         memcpy(&normals[vertexIndex], glyphNormals, 4 * sizeof(Vector3));
         memcpy(&tChoords[vertexIndex], glyphTCoords, 4 * sizeof(Vector2));
-        memcpy(&elements[elementIndex], glyphElements, 6 * sizeof(uint16_t));
+        memcpy(&elements[elementIndex], glyphElements, 6 * sizeof(uint32_t));
         
         vertexIndex += 4;
         elementIndex += 6;

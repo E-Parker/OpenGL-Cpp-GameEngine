@@ -80,16 +80,36 @@ GLuint CompileShaderProgram(GLuint vs, GLuint fs) {
     glLinkProgram(program);             // Run the linking step.
 
     // Find out if there were errors linking the shader program.
-    int success;                        // int to store the error code
-    char infoLog[GL_ERROR_LOG_SIZE];    // buffer for logged info.
+    int success;
+    int vs_success;
+    int fs_success;
+
+    int dummyLength;
+    char progLog[GL_ERROR_LOG_SIZE]{'\0'};
+    char vsLog[GL_ERROR_LOG_SIZE]{'\0'};
+    char fsLog[GL_ERROR_LOG_SIZE]{'\0'};
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     
+
     // If the compile failed for some reason, clear the program and log the error.
     if (!success) {
+        glGetProgramInfoLog(program, GL_ERROR_LOG_SIZE, &dummyLength, progLog);
+        std::cout << "ERROR: Could not link a shader program! Program error Log:\n" << progLog << std::endl;
         program = GL_NONE;
-        glGetProgramInfoLog(program, GL_ERROR_LOG_SIZE, NULL, infoLog);
-        std::cout << "ERROR: Could not link a shader program!\n" << infoLog << std::endl;
-        program = GL_NONE;
+        
+        // Debug the vertex shader and fragment shader.
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &vs_success);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &fs_success);
+
+        if (!vs_success) {
+            glGetShaderInfoLog(vs, GL_ERROR_LOG_SIZE, &dummyLength, vsLog);
+            std::cout << "vertex shader Log:\n" << vsLog << std::endl;
+        }
+
+        if (!fs_success) {
+            glGetShaderInfoLog(fs, GL_ERROR_LOG_SIZE, &dummyLength, fsLog);
+            std::cout << "fragment shader Log:\n" << fsLog << std::endl;
+        }
     }
 
     glDeleteShader(vs);
