@@ -43,7 +43,7 @@ bool FindTexture(const char* alias, Texture** outValue);
 
 void DereferenceTextures();
 void DeleteTexture(const char* alias);
-Texture* CreateTexture(char* path, char* alias, GLenum internalFormat, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType);
+Texture* CreateTexture(const char* path, const char* alias, GLenum internalFormat, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType);
 Texture* CreateCubemapTexture(const char* texturePaths[6], const char* alias, GLenum internalFormat, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType);
 
 

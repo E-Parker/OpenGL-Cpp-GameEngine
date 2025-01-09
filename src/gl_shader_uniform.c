@@ -368,7 +368,7 @@ Shader* Shader_create(const GLuint program, const char* alias) {
     /* create a new shader, populate the fields and return a pointer to it. */
 
     Shader* shader;
-    HashTable_find(ShaderProgramTable, ShaderProgramTable, &shader);
+    HashTable_find(ShaderProgramTable, alias, &shader);
 
     if (shader) {
         shader->References++;

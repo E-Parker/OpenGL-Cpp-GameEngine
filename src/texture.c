@@ -100,7 +100,7 @@ void CreateRawTexture(const char* path, Texture* texture, GLenum internalFormat,
 
 }
 
-Texture* CreateTexture(char* path, char* alias, GLenum internalFormat, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
+Texture* CreateTexture(const char* path, const char* alias, GLenum internalFormat, bool flipVertical, bool flipHorizontal, bool useMipmaps, int filterType) {
     /* This function creates a new texture from the file path and the alias. if the texture already exists in memory, the returned value will be that one.
     This will hopefully save delectably scrumptious graphics memory mmmhh. If an alias is not provided, the texture will use it's path as an alias. */
 

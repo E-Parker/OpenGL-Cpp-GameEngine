@@ -4,11 +4,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-const int size_from_gl_type(const GLenum Type) {
+const GLuint size_from_gl_type(const GLenum type) {
     // I would like to not have a massive switch case but there isn't really a better way.
     // The API just does not have functionality for this since GLfloat and GLint are always assumed to be 
     // exactly the same as C / C++ standards. 
-    switch (Type) {
+    switch (type) {
     case GL_FLOAT: return sizeof(GLfloat);
     case GL_FLOAT_VEC2: return sizeof(GLfloat[2]);
     case GL_FLOAT_VEC3: return sizeof(GLfloat[3]);
