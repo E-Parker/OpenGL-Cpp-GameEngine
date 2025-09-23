@@ -1,6 +1,8 @@
 #include <glad/glad.h>
 
 #include <cstdint>
+#include <iostream>
+#include <cstdarg>
 
 #include "vectorMath.h"
 #include "material.h"
@@ -50,8 +52,24 @@ void FreeSubMesh(Mesh* mesh) {
 
 }
 
+#define DEBUG_MESH_DATA
+#ifdef DEBUG_MESH_DATA
 
-void UploadMesh(Mesh* mesh, const  uint32_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
+#include <iostream>
+#include <string>
+#include <fstream>
+
+void WriteFormated(FILE* stream, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stream, format, args);
+    va_end(args);
+}
+
+static int MeshUploadCount = 0;
+#endif
+
+void UploadMesh(Mesh* mesh,   uint32_t* indeciesArray,   Vector3* vertexBufferArray,   Vector3* normalBufferArray,  Vector2* tCoordArray,   size_t indecies,   size_t vertecies) {
     /* Uploading mesh to GPU. points and normalBuffer must exist for the upload to work.
     tCoord data and face data is optional. */
 
@@ -60,7 +78,33 @@ void UploadMesh(Mesh* mesh, const  uint32_t* indeciesArray, const  Vector3* vert
     size_t indexBytes = indecies * sizeof(uint32_t);
     size_t normalBytes = vertexBytes;
 
-    mesh->indexBytes = indexBytes;
+    mesh->indices = indecies;
+#ifdef DEBUG_MESH_DATA
+    string filename = "mesh" + to_string(MeshUploadCount++) + ".bin";
+
+    FILE* file = fopen(filename.c_str(), "wb");
+
+    fwrite(&indexBytes, 8, 1, file);
+    fwrite(&vertexBytes, 8, 1, file);
+    fwrite(&normalBytes, 8, 1, file);
+    fwrite(&tCoordBytes, 8, 1, file);
+    fflush(file);
+
+    fwrite(indeciesArray, sizeof(int32_t), indecies, file);
+    fflush(file);
+
+    fwrite(vertexBufferArray, sizeof(Vector3), vertecies, file);
+    fflush(file);
+    
+    fwrite(normalBufferArray, sizeof(Vector3), vertecies, file);
+    fflush(file);
+    
+    fwrite(tCoordArray, sizeof(Vector2), vertecies, file);
+    fflush(file);
+
+    fclose(file);
+
+#endif
 
     // Create a Vertex Attribute Object. This is kind of like a container for the buffer objects.              
     if (mesh->VertexAttributeObject == GL_NONE) { glGenVertexArrays(1, &(mesh->VertexAttributeObject)); }
@@ -70,14 +114,14 @@ void UploadMesh(Mesh* mesh, const  uint32_t* indeciesArray, const  Vector3* vert
     if (mesh->VertexBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->VertexBufferObject)); }
     glBindBuffer(GL_ARRAY_BUFFER, (mesh->VertexBufferObject));
     glBufferData(GL_ARRAY_BUFFER, vertexBytes, vertexBufferArray, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(0);
 
     // This buffer is bound to the 1st Attribute, it stores the normal vectors for each point.
     if (mesh->NormalBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->NormalBufferObject)); }
     glBindBuffer(GL_ARRAY_BUFFER, mesh->NormalBufferObject);
     glBufferData(GL_ARRAY_BUFFER, normalBytes, normalBufferArray, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(1);
 
     // First we check if the mesh has texture coordinates, then we add a buffer and assign it.
@@ -85,7 +129,7 @@ void UploadMesh(Mesh* mesh, const  uint32_t* indeciesArray, const  Vector3* vert
         if (mesh->TextureCoordBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->TextureCoordBufferObject)); }
         glBindBuffer(GL_ARRAY_BUFFER, mesh->TextureCoordBufferObject);
         glBufferData(GL_ARRAY_BUFFER, tCoordBytes, tCoordArray, GL_STATIC_DRAW);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), nullptr);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
         glEnableVertexAttribArray(2);
     }
 
@@ -102,11 +146,11 @@ void UploadMesh(Mesh* mesh, const  uint32_t* indeciesArray, const  Vector3* vert
 
 }
 
-void UploadSubMesh(Mesh* mesh, Mesh* source, const uint32_t* indeciesArray, const uint32_t indecies) {
+void UploadSubMesh(Mesh* mesh, Mesh* source,  uint32_t* indeciesArray,  uint32_t indecies) {
     /* variant of UploadMesh for meshes that share vertices but have a different element buffer. */
 
     size_t indexBytes = indecies * sizeof(uint32_t);
-    mesh->indexBytes = indexBytes;
+    mesh->indices = indecies;
 
     if (mesh->VertexAttributeObject == GL_NONE) {
         glGenVertexArrays(1, &(mesh->VertexAttributeObject));
@@ -115,17 +159,17 @@ void UploadSubMesh(Mesh* mesh, Mesh* source, const uint32_t* indeciesArray, cons
 
     mesh->VertexBufferObject = source->VertexBufferObject;
     glBindBuffer(GL_ARRAY_BUFFER, mesh->VertexBufferObject);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(0);
 
     mesh->NormalBufferObject = source->NormalBufferObject;
     glBindBuffer(GL_ARRAY_BUFFER, mesh->NormalBufferObject);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), nullptr);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(1);
 
     mesh->TextureCoordBufferObject = source->TextureCoordBufferObject;
     glBindBuffer(GL_ARRAY_BUFFER, mesh->TextureCoordBufferObject);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), nullptr);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
     glEnableVertexAttribArray(2);
 
     if (mesh->ElementBufferObject == GL_NONE) { glGenBuffers(1, &(mesh->ElementBufferObject)); }
@@ -139,7 +183,7 @@ void UploadSubMesh(Mesh* mesh, Mesh* source, const uint32_t* indeciesArray, cons
 }
 
 
-void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* transform) {
+void DrawRenderable( Mesh* mesh,  Material* material, const Matrix* transform) {
     // Bind the material's shader program and textures.
 
     BindMaterial(material);
@@ -150,7 +194,7 @@ void DrawRenderable(const Mesh* mesh, const Material* material, const Matrix* tr
     // Bind the VAO and draw the elements.
     glBindVertexArray(mesh->VertexAttributeObject);
     glUniformMatrix4fv(u_mvp, 1, GL_FALSE, ToFloat16(*transform).v);
-    glDrawElements(GL_TRIANGLES, mesh->indexBytes, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, mesh->indices, GL_UNSIGNED_INT, 0);
 
     // unbind the VAO.
     glBindVertexArray(GL_NONE);

@@ -1637,6 +1637,8 @@ RMAPI Matrix Frustum(double left, double right, double bottom, double top, doubl
     return result;
 }
 
+#include <cstdio>
+
 // Get perspective projection matrix
 // NOTE: Fovy angle must be provided in radians
 RMAPI Matrix Perspective(double fovy, double aspect, double near, double far)

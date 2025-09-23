@@ -17,9 +17,11 @@
 #include "gl_types.h"
 #include "gl_shader_uniform.h"
 
-constexpr int SCREEN_WIDTH = 1280;
-constexpr int SCREEN_HEIGHT = 720;
+constexpr int SCREEN_WIDTH = 640;
+constexpr int SCREEN_HEIGHT = 480;
 
+#define mat4_print(m) printf("%f, %f, %f, %f, \n%f, %f, %f, %f, \n%f, %f, %f, %f, \n%f, %f, %f, %f \n\n", m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15])
+#define vector3_print(v) printf("%f, %f, %f \n", v[0], v[1], v[2])
 
 int main(void) {
 
@@ -38,11 +40,12 @@ int main(void) {
     CreateTexture("./assets/defaultAssets/defaultTexture.png", "defaultTexture", GL_RGBA, false, false, false, GL_LINEAR);
     CreateTexture("./assets/defaultAssets/missingTexture.png", "MissingTexture", GL_RGBA, false, false, false, GL_NEAREST);
     CreateTexture("./assets/defaultAssets/missingNormal.png", "missingNormal", GL_RGB, false, false, false, GL_LINEAR);
+    CreateTexture("./assets/defaultAssets/missingSpecular.png", "missingSpecular", GL_RGB, false, false, false, GL_LINEAR);
 
     // Load Textures:
     CreateTexture("./assets/textures/Mushroom.png", "mushroomBody", GL_RGBA, false, false, false, GL_LINEAR);
     CreateTexture("./assets/textures/MushroomGlow.png", "mushroomGlow", GL_RGB, false, false, false, GL_LINEAR);
-    CreateTexture("./assets/textures/missingSpecular.png", "Specular", GL_RGB, false, false, false, GL_LINEAR);
+    CreateTexture("./assets/textures/MissingSpecular.png", "Specular", GL_RGB, false, false, false, GL_LINEAR);
 
     // Load Materials:
     Material* DefaultTextMaterial = new Material("./assets/shaders/defaultText.vert", "./assets/shaders/defaultText.frag", 1, GL_BACK, GL_ALWAYS);
@@ -52,10 +55,10 @@ int main(void) {
     Material* Mat1 = new Material("./assets/shaders/default.vert", "./assets/shaders/default.frag", 4, GL_BACK, GL_LESS);
 
     // Set Material Textures:
-    SetTextureFromAlias(Mat1, "Specular", 0);
-    SetTextureFromAlias(Mat1, "Specular", 1);
+    SetTextureFromAlias(Mat1, "missingSpecular", 0);
+    SetTextureFromAlias(Mat1, "missingSpecular", 1);
     SetTextureFromAlias(Mat1, "missingNormal", 2);
-    SetTextureFromAlias(Mat1, "Specular", 3);
+    SetTextureFromAlias(Mat1, "missingSpecular", 3);
 
     SetTextureFromAlias(Mat0, "mushroomBody", 0);
     SetTextureFromAlias(Mat0, "defaultTexture", 1);
@@ -70,7 +73,7 @@ int main(void) {
     //SetFont(testText, "IBM", defautFont);
 
     StaticMesh* mesh = CreateStaticMeshFromWavefront("./assets/meshes/Mushroom.obj");
-    StaticMesh* lightVis = CreateStaticMeshFromWavefront("./assets/meshes/icosphere.obj");
+    StaticMesh* lightVis = CreateStaticMeshFromWavefront("./assets/meshes/arrow.obj");
     mesh->SetMaterial(Mat0, 0);
     lightVis->SetMaterial(Mat1, 0);
 
@@ -91,10 +94,10 @@ int main(void) {
 
     vec3 lightPos { 0.0f, 5.0f, 0.0f };
     vec3 lightDir { 1.0f, 0.0f, 0.0f };
-    vec3 lightColor { 2.0f, 2.0f, 2.0f };
-    vec3 AmbientColor { 0.5f, 0.5f, 0.5f };
+    vec3 lightColor { 1.0f, 1.0f, 1.0f };
+    vec3 AmbientColor { 0.8f, 0.8f, 0.8f };
 
-    float lightRadius = 15.0f;
+    float lightRadius = 25.0f;
 
     UniformBuffer_set_Global("LightData", "u_activeLights", &activeLights);
     UniformBuffer_set_Global("LightData", "u_ambientColor", &AmbientColor);
@@ -134,10 +137,13 @@ int main(void) {
 
         *GET_ASSET_TRANSFORM(mesh) = Translate(static_cast<float>(x), static_cast<float>(y), 0.0f);
         
-        lightPos[0] = sinf(Time() * 1.3f) * 2.0f;
-        lightPos[1] = (sinf(Time() * 0.7f) * 0.2f) + 1.0f;
-        lightPos[2] = cosf(Time() * 1.3f) * 2.0f;
-        *GET_ASSET_TRANSFORM(lightVis) = Translate(lightPos[0], lightPos[1], lightPos[2]);        
+        lightPos[0] = sinf(Time() * 1.3f) * 3.0f;
+        lightPos[1] = (sinf(Time() * 0.7f) * 0.4f);
+        lightPos[2] = cosf(Time() * 1.3f) * 3.0f;
+        //*GET_ASSET_TRANSFORM(lightVis) = Translate(lightPos[0], lightPos[1], lightPos[2]);    
+
+        *GET_ASSET_TRANSFORM(lightVis) = Invert(LookAt({ lightPos[0], lightPos[1], lightPos[2] }, V3_ZERO, V3_UP));
+
         UniformBuffer_set_Struct_at_Global("LightData", "u_Lights", "position", 0, &lightPos);
 
         mainCamera->Update(mainCamera, DeltaTime(), AspectRatio());
@@ -152,6 +158,11 @@ int main(void) {
 
         //UniformStruct* u_lights;
         //UniformBuffer_get_Struct(buffer1, "u_lights", &u_lights);
+        float16 cameraTransform = ToFloat16(mainCamera->Transform);
+
+        //vector3_print(cameraDir);
+        //mat4_print(cameraView.v);
+        //vector3_print(cameraPos);
 
         UniformBuffer_set_Global("FrameData", "u_time", &time);
         UniformBuffer_set_Global("FrameData", "u_view", &cameraView.v);

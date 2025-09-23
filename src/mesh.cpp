@@ -196,7 +196,6 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
 
     char lineBuffer[LINE_BUFFER_SIZE];
     char identifyer[2] = { '\0', '\0' };
-    uint32_t lineCount = 0;
     uint32_t materialCount = 0;
 
     std::string ObjectName = "None";
@@ -282,19 +281,39 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
     // Assert that all index list are the same size.
     assert(vi.size() == ni.size() && ni.size() == ti.size());
 
-
-    //std::vector<uint32_t> occurances(vi.size(), 0);
-    //std::vector<uint32_t> matchingTcoord(vi.size(), 0);
-    //
-    //for (uint32_t i = 0; i < vi.size(); i++) {
-    //    occurances[vi[i]]++;
-    //}
+    typedef struct indexpair {
+        uint32_t vertexindex;
+        uint32_t i;
+    } indexpair;
 
     std::vector<Vector3> normalArray(vertexList.size(), Vector3{ 0.0f, 1.0f, 0.0f });
     std::vector<Vector2> tCoordArray(vertexList.size(), Vector2{ 0.0f, 0.0f });
+    std::vector<indexpair> existingIndicies(0);
+    
+    uint64_t initialSize = vi.size();
 
+    // Duplicate any vertices that reference multiple normals or texture choords.
+    for (uint32_t i = 0; i < initialSize; i++) {
+        indexpair* found = nullptr;
+        for (uint32_t j = 0; j < existingIndicies.size();  j++) {
+            if (existingIndicies[j].vertexindex == vi[i]) {
+                found = &existingIndicies[j];
+                break;
+            }
+        }
 
-    for (uint32_t i = 0; i < vi.size(); i++) {
+        if (found && (ni[i] != ni[found->i] || ti[i] != ti[found->i])) {
+            uint32_t size = vertexList.size();
+            vertexList.push_back(vertexList[vi[i]]);
+            normalArray.push_back(normalList[ni[i]]);
+            tCoordArray.push_back(tCoordList[ti[i]]);
+            vi[i] = size;
+            continue;
+        }
+        else {
+            existingIndicies.push_back({ vi[i], i });
+        }
+
         normalArray[vi[i]] = normalList[ni[i]];
         tCoordArray[vi[i]] = tCoordList[ti[i]];
     }
@@ -322,7 +341,7 @@ StaticMesh* CreateStaticMeshFromWavefront(const char* path) {
 //par_shapes_compute_normals(parMesh);
 
 
-StaticMesh* CreateStaticMeshFromRawData(const uint32_t* indeciesArray, const  Vector3* vertexBufferArray, const  Vector3* normalBufferArray, const  Vector2* tCoordArray, const  size_t indecies, const  size_t vertecies) {
+StaticMesh* CreateStaticMeshFromRawData(uint32_t* indeciesArray, Vector3* vertexBufferArray, Vector3* normalBufferArray, Vector2* tCoordArray, size_t indecies, size_t vertecies) {
     StaticMesh* newMesh = new StaticMesh(1, MatrixIdentity());
     UploadMesh(&(newMesh->meshRenders[0]), indeciesArray, vertexBufferArray, normalBufferArray, tCoordArray, indecies, vertecies);
     return newMesh;
